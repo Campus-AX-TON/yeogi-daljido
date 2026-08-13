@@ -1,0 +1,24 @@
+# Dependencies and build output
+node_modules/
+dist/
+.vite/
+
+# Local environment and logs
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+
+# Codex and design-work artifacts
+AGENTS.md
+design-qa.md
+implementation-*.png
+implementation-*.jpg
+qa-*.png
+qa-*.jpg
+.openai/
+
+# Source references not used by the running app
+public/assets/reference-dashboard.png
+public/assets/seasonal-fruits.png
