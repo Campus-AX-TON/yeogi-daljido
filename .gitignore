@@ -17,7 +17,8 @@ implementation-*.png
 implementation-*.jpg
 qa-*.png
 qa-*.jpg
-.openai/
+.openai/*
+!.openai/hosting.json
 
 # Source references not used by the running app
 public/assets/reference-dashboard.png
