@@ -217,6 +217,32 @@ button {
   font-size: 14px;
 }
 
+.data-usage {
+  margin: 24px 0;
+  padding: 20px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  background: #f9fafb;
+}
+
+.data-usage h3,
+.data-usage h4 {
+  margin-top: 0;
+}
+
+.data-usage h4:not(:first-of-type) {
+  margin-top: 20px;
+}
+
+.data-usage ul {
+  margin-bottom: 0;
+  padding-left: 20px;
+}
+
+.data-usage li + li {
+  margin-top: 8px;
+}
+
 .raw-response summary {
   cursor: pointer;
   font-weight: 700;
@@ -233,6 +259,10 @@ button {
   text-align: left;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+.raw-response--region {
+  margin-top: 18px;
 }
 
 @media (max-width: 560px) {

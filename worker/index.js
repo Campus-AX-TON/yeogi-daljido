@@ -2,6 +2,7 @@ const KMA_DAILY_STATISTICS_URL =
   "https://apis.data.go.kr/1360000/FmlandWthrInfoService/getDayStatistics";
 
 const PEAR_CROP_ID = "PA160101";
+const GRAPE_CROP_ID = "PA340101";
 const RECOMMENDATION_CACHE_TTL_MS = 30 * 60 * 1000;
 const recommendationCache = new Map();
 const pendingRecommendations = new Map();
@@ -13,6 +14,16 @@ const PEAR_REGIONS = [
   { id: "4725000000", name: "상주", province: "경북", latitude: 36.4084, longitude: 128.1574 },
 ];
 
+const GRAPE_REGIONS = [
+  { id: "4374000000", name: "영동", province: "충북", latitude: 36.175, longitude: 127.7834 },
+  { id: "4715000000", name: "김천", province: "경북", latitude: 36.1398, longitude: 128.1136 },
+  { id: "4723000000", name: "영천", province: "경북", latitude: 35.9733, longitude: 128.9386 },
+  { id: "4725000000", name: "상주", province: "경북", latitude: 36.4109, longitude: 128.1591 },
+  { id: "4159000000", name: "화성", province: "경기", latitude: 37.1995, longitude: 126.8312 },
+  { id: "4373000000", name: "옥천", province: "충북", latitude: 36.3064, longitude: 127.5714 },
+  { id: "4182000000", name: "가평", province: "경기", latitude: 37.8315, longitude: 127.5096 },
+];
+
 const DEMO_METRICS = [
   { regionId: "4122000000", sunshineRatio: 112, hotDays: 1, rainfallMm: 8, rainfallRatio: 82, warningDays: 0 },
   { regionId: "4413100000", sunshineRatio: 106, hotDays: 1, rainfallMm: 12, rainfallRatio: 108, warningDays: 0 },
@@ -21,11 +32,161 @@ const DEMO_METRICS = [
   { regionId: "4725000000", sunshineRatio: 109, hotDays: 4, rainfallMm: 11, rainfallRatio: 95, warningDays: 0 },
 ];
 
+const GRAPE_DEMO_METRICS = [
+  {
+    regionId: "4374000000",
+    gdd: 860,
+    gddBaseline: 820,
+    gddRatio: 105,
+    sunshineHours: 426,
+    sunshineBaselineHours: 404,
+    sunshineRatio: 105,
+    rainfallMm: 438,
+    rainfallBaselineMm: 462,
+    rainfallRatio: 95,
+    averageTemperature: 23.1,
+    hotDays: 9,
+    rainyDays: 27,
+    longestRainStreak: 4,
+    humidityAverage: 73,
+    windAverage: 1.4,
+    warningDays: 2,
+    observedDays: 78,
+  },
+  {
+    regionId: "4715000000",
+    gdd: 892,
+    gddBaseline: 844,
+    gddRatio: 106,
+    sunshineHours: 445,
+    sunshineBaselineHours: 421,
+    sunshineRatio: 106,
+    rainfallMm: 471,
+    rainfallBaselineMm: 452,
+    rainfallRatio: 104,
+    averageTemperature: 23.5,
+    hotDays: 12,
+    rainyDays: 25,
+    longestRainStreak: 3,
+    humidityAverage: 71,
+    windAverage: 1.2,
+    warningDays: 2,
+    observedDays: 78,
+  },
+  {
+    regionId: "4723000000",
+    gdd: 904,
+    gddBaseline: 858,
+    gddRatio: 105,
+    sunshineHours: 452,
+    sunshineBaselineHours: 430,
+    sunshineRatio: 105,
+    rainfallMm: 410,
+    rainfallBaselineMm: 443,
+    rainfallRatio: 93,
+    averageTemperature: 23.6,
+    hotDays: 13,
+    rainyDays: 23,
+    longestRainStreak: 3,
+    humidityAverage: 69,
+    windAverage: 1.5,
+    warningDays: 1,
+    observedDays: 78,
+  },
+  {
+    regionId: "4725000000",
+    gdd: 875,
+    gddBaseline: 836,
+    gddRatio: 105,
+    sunshineHours: 437,
+    sunshineBaselineHours: 416,
+    sunshineRatio: 105,
+    rainfallMm: 492,
+    rainfallBaselineMm: 468,
+    rainfallRatio: 105,
+    averageTemperature: 23.3,
+    hotDays: 10,
+    rainyDays: 28,
+    longestRainStreak: 5,
+    humidityAverage: 74,
+    windAverage: 1.3,
+    warningDays: 2,
+    observedDays: 78,
+  },
+  {
+    regionId: "4159000000",
+    gdd: 828,
+    gddBaseline: 806,
+    gddRatio: 103,
+    sunshineHours: 405,
+    sunshineBaselineHours: 398,
+    sunshineRatio: 102,
+    rainfallMm: 521,
+    rainfallBaselineMm: 479,
+    rainfallRatio: 109,
+    averageTemperature: 22.8,
+    hotDays: 7,
+    rainyDays: 30,
+    longestRainStreak: 5,
+    humidityAverage: 76,
+    windAverage: 1.8,
+    warningDays: 3,
+    observedDays: 78,
+  },
+  {
+    regionId: "4373000000",
+    gdd: 848,
+    gddBaseline: 819,
+    gddRatio: 104,
+    sunshineHours: 418,
+    sunshineBaselineHours: 407,
+    sunshineRatio: 103,
+    rainfallMm: 449,
+    rainfallBaselineMm: 460,
+    rainfallRatio: 98,
+    averageTemperature: 23,
+    hotDays: 8,
+    rainyDays: 26,
+    longestRainStreak: 4,
+    humidityAverage: 74,
+    windAverage: 1.3,
+    warningDays: 1,
+    observedDays: 78,
+  },
+  {
+    regionId: "4182000000",
+    gdd: 781,
+    gddBaseline: 770,
+    gddRatio: 101,
+    sunshineHours: 389,
+    sunshineBaselineHours: 393,
+    sunshineRatio: 99,
+    rainfallMm: 540,
+    rainfallBaselineMm: 501,
+    rainfallRatio: 108,
+    averageTemperature: 22.1,
+    hotDays: 5,
+    rainyDays: 31,
+    longestRainStreak: 5,
+    humidityAverage: 77,
+    windAverage: 1.1,
+    warningDays: 2,
+    observedDays: 78,
+  },
+];
+
 const SOURCE_LINKS = {
   weather: "https://www.data.go.kr/data/15059518/openapi.do",
   varieties: "https://www.rda.go.kr/middlePopOpenPopNongsaroDBView.do?no=2019",
   heatRisk:
     "https://www.rda.go.kr/board/board.do?boardId=farmprmninfo&currPage=1&dataNo=100000812078&mode=updateCnt&prgId=day_farmprmninfoEntry",
+};
+
+const GRAPE_SOURCE_LINKS = {
+  weather: "https://www.data.go.kr/data/15059518/openapi.do",
+  harvestGuide: "https://www.rda.go.kr/middlePopOpenPopNongsaroDBView.do?no=1548",
+  evidence:
+    "https://app.notion.com/p/3bb41d2e95b380ffaecaea9b2b4f354d",
 };
 
 const RULES = {
@@ -56,6 +217,48 @@ const RULES = {
       weight: 15,
       description: "평년 대비 강수와 기상특보 발생을 위험 신호로 반영합니다.",
     },
+  ],
+};
+
+const GRAPE_RULES = {
+  model: "grape-weather-suitability-v0.1",
+  label: "캠벨얼리 포도 생육기상 적합도",
+  disclaimer:
+    "실제 당도나 개별 상품 품질을 예측하는 모델이 아닙니다. 캠벨얼리 기준 기상 조건을 비교하며, 일사량 대신 일조시간을 대체지표로 사용합니다.",
+  observationWindow: {
+    startDaysBefore: 80,
+    endDaysBefore: 3,
+    historicalYears: 3,
+    baseTemperatureCelsius: 10,
+  },
+  scoring: [
+    {
+      id: "temperature",
+      label: "누적 생육온도",
+      weight: 34,
+      sourceFields: ["dayMaxTa", "dayMinTa"],
+      description: "일 최고·최저기온으로 GDD를 계산하고 같은 지역의 최근 3개년 동기간과 비교합니다.",
+    },
+    {
+      id: "moisture",
+      label: "수분 안정성",
+      weight: 33,
+      sourceFields: ["daySumRn"],
+      description: "시즌 누적강수가 같은 지역의 최근 3개년 동기간에서 크게 벗어나지 않는지 봅니다.",
+    },
+    {
+      id: "sunshineProxy",
+      label: "일조 대체지표",
+      weight: 33,
+      sourceFields: ["daySumSs"],
+      description: "현재 API에 일사량이 없어 누적 일조시간을 조건부 대체지표로 사용합니다.",
+    },
+  ],
+  excludedFromScore: [
+    { id: "dayNightRange", label: "일교차", reason: "당도 직접 근거가 부족해 점수에서 제외합니다." },
+    { id: "humidity", label: "습도", reason: "병해·열과 참고값으로만 표시합니다." },
+    { id: "wind", label: "풍속", reason: "생산 위험 참고값으로만 표시합니다." },
+    { id: "warning", label: "기상특보", reason: "재해 위험 참고값으로만 표시합니다." },
   ],
 };
 
@@ -182,6 +385,87 @@ function unwrapItems(payload) {
   return item ? [item] : [];
 }
 
+function normalizeObservationDate(value) {
+  return String(value ?? "").slice(0, 10);
+}
+
+function normalizeDailyRows(rows) {
+  const byDate = new Map();
+
+  for (const row of rows) {
+    const date = normalizeObservationDate(row.ymd);
+    if (!date) continue;
+
+    const warningCode = row.wmCd ?? row.wrnCd;
+    const existing = byDate.get(date);
+    if (existing) {
+      if (warningCode) existing.warningCodes.add(warningCode);
+      existing.warningCount = Math.max(existing.warningCount, number(row.wmCount ?? row.wrnCount));
+      continue;
+    }
+
+    byDate.set(date, {
+      date,
+      areaId: row.areaId,
+      areaName: row.areaName,
+      cropName: row.paCropName,
+      cropId: row.paCropSpeId,
+      cultivarName: row.paCropSpeName,
+      averageTemperature: number(row.dayAvgTa),
+      maximumTemperature: number(row.dayMaxTa),
+      minimumTemperature: number(row.dayMinTa),
+      averageHumidity: number(row.dayAvgRhm),
+      minimumHumidity: number(row.dayMinRhm),
+      rainfallMm: number(row.daySumRn),
+      averageWindSpeed: number(row.dayAvgWs),
+      sunshineHours: number(row.daySumSs),
+      warningCount: number(row.wmCount ?? row.wrnCount),
+      warningCodes: new Set(warningCode ? [warningCode] : []),
+    });
+  }
+
+  return [...byDate.values()]
+    .sort((left, right) => left.date.localeCompare(right.date))
+    .map((row) => ({ ...row, warningCodes: [...row.warningCodes].sort() }));
+}
+
+function calculateGdd(rows, baseTemperature) {
+  return rows.reduce((total, row) => {
+    const dailyMean = (row.maximumTemperature + row.minimumTemperature) / 2;
+    return total + Math.max(0, dailyMean - baseTemperature);
+  }, 0);
+}
+
+function longestRainStreak(rows) {
+  let longest = 0;
+  let current = 0;
+
+  for (const row of rows) {
+    current = row.rainfallMm > 0 ? current + 1 : 0;
+    longest = Math.max(longest, current);
+  }
+
+  return longest;
+}
+
+function summarizeGrapeRows(rows) {
+  const gdd = calculateGdd(rows, GRAPE_RULES.observationWindow.baseTemperatureCelsius);
+
+  return {
+    gdd: round(gdd, 1),
+    sunshineHours: round(rows.reduce((total, row) => total + row.sunshineHours, 0), 1),
+    rainfallMm: round(rows.reduce((total, row) => total + row.rainfallMm, 0), 1),
+    averageTemperature: round(average(rows.map((row) => row.averageTemperature)), 1),
+    hotDays: rows.filter((row) => row.maximumTemperature >= 31).length,
+    rainyDays: rows.filter((row) => row.rainfallMm > 0).length,
+    longestRainStreak: longestRainStreak(rows),
+    humidityAverage: round(average(rows.map((row) => row.averageHumidity)), 1),
+    windAverage: round(average(rows.map((row) => row.averageWindSpeed)), 1),
+    warningDays: rows.filter((row) => row.warningCount > 0).length,
+    observedDays: rows.length,
+  };
+}
+
 function normalizeServiceKey(serviceKey) {
   try {
     return decodeURIComponent(serviceKey);
@@ -195,18 +479,19 @@ export async function fetchKmaDailyStatistics({
   region,
   startDate,
   endDate,
+  cropId = PEAR_CROP_ID,
   fetchImpl = fetch,
 }) {
   const url = new URL(KMA_DAILY_STATISTICS_URL);
   url.search = new URLSearchParams({
     ServiceKey: normalizeServiceKey(serviceKey),
     pageNo: "1",
-    numOfRows: "100",
+    numOfRows: "500",
     dataType: "JSON",
     ST_YMD: compactDate(startDate),
     ED_YMD: compactDate(endDate),
     AREA_ID: region.id,
-    PA_CROP_SPE_ID: PEAR_CROP_ID,
+    PA_CROP_SPE_ID: cropId,
   }).toString();
 
   for (let attempt = 0; attempt < 3; attempt += 1) {
@@ -301,6 +586,239 @@ async function collectLiveMetrics({ serviceKey, referenceDate, fetchImpl }) {
     metrics,
     windowStart: formatDate(windowStart),
     windowEnd: formatDate(windowEnd),
+  };
+}
+
+async function collectGrapeLiveMetrics({ serviceKey, referenceDate, fetchImpl }) {
+  const windowStart = addDays(referenceDate, -GRAPE_RULES.observationWindow.startDaysBefore);
+  const windowEnd = addDays(referenceDate, -GRAPE_RULES.observationWindow.endDaysBefore);
+
+  const collected = await mapWithConcurrency(
+    GRAPE_REGIONS,
+    2,
+    async (region) => {
+      const recentRaw = await fetchKmaDailyStatistics({
+        serviceKey,
+        region,
+        startDate: windowStart,
+        endDate: windowEnd,
+        cropId: GRAPE_CROP_ID,
+        fetchImpl,
+      });
+      const recent = normalizeDailyRows(recentRaw);
+
+      if (recent.length === 0) {
+        const error = new Error(`${region.name}의 최근 포도 기상 관측값이 없습니다.`);
+        error.code = "NO_DATA";
+        throw error;
+      }
+
+      const historicalSummaries = [];
+      for (let offset = 1; offset <= GRAPE_RULES.observationWindow.historicalYears; offset += 1) {
+        const historicalStart = addYears(windowStart, -offset);
+        const historicalEnd = addYears(windowEnd, -offset);
+        const historicalRaw = await fetchKmaDailyStatistics({
+          serviceKey,
+          region,
+          startDate: historicalStart,
+          endDate: historicalEnd,
+          cropId: GRAPE_CROP_ID,
+          fetchImpl,
+        });
+        const historical = normalizeDailyRows(historicalRaw);
+
+        if (historical.length === 0) {
+          const error = new Error(`${region.name}의 ${offset}년 전 포도 기준 관측값이 없습니다.`);
+          error.code = "NO_DATA";
+          throw error;
+        }
+
+        historicalSummaries.push({
+          yearOffset: offset,
+          start: formatDate(historicalStart),
+          end: formatDate(historicalEnd),
+          ...summarizeGrapeRows(historical),
+        });
+      }
+
+      const current = summarizeGrapeRows(recent);
+      const gddBaseline = average(historicalSummaries.map((summary) => summary.gdd));
+      const sunshineBaseline = average(historicalSummaries.map((summary) => summary.sunshineHours));
+      const rainfallBaseline = average(historicalSummaries.map((summary) => summary.rainfallMm));
+      const sunshineDataAvailable = current.sunshineHours > 0 && sunshineBaseline > 0;
+
+      return {
+        metric: {
+          regionId: region.id,
+          ...current,
+          gddBaseline: round(gddBaseline, 1),
+          gddRatio: gddBaseline > 0 ? round((current.gdd / gddBaseline) * 100) : 100,
+          sunshineHours: sunshineDataAvailable ? current.sunshineHours : null,
+          sunshineBaselineHours: sunshineDataAvailable ? round(sunshineBaseline, 1) : null,
+          sunshineRatio: sunshineDataAvailable
+            ? round((current.sunshineHours / sunshineBaseline) * 100)
+            : null,
+          sunshineDataAvailable,
+          rainfallBaselineMm: round(rainfallBaseline, 1),
+          rainfallRatio: rainfallBaseline > 0 ? round((current.rainfallMm / rainfallBaseline) * 100) : 100,
+        },
+        evidence: {
+          source: "기상청 작물별 농업주산지 상세날씨 일통계",
+          rawResponseRows: recentRaw,
+          normalizedDailyRows: recent,
+          historicalSummaries,
+          notes: [
+            "같은 날짜에 복수 특보가 있으면 원본 행은 모두 보존하고, 계산용 일자료에서는 기상값을 한 번만 반영합니다.",
+            "최근 3개년 원본은 응답 크기와 호출 비용을 줄이기 위해 연도별 계산 요약으로 제공합니다.",
+          ],
+        },
+      };
+    },
+  );
+
+  return {
+    metrics: collected.map(({ metric }) => metric),
+    evidenceByRegion: Object.fromEntries(
+      collected.map(({ metric, evidence }) => [metric.regionId, evidence]),
+    ),
+    windowStart: formatDate(windowStart),
+    windowEnd: formatDate(windowEnd),
+  };
+}
+
+function scoreGrapeMetrics(metric) {
+  const sunshineDataAvailable = metric.sunshineDataAvailable ?? (metric.sunshineRatio !== null);
+  const temperatureFit = clamp(
+    70 + (metric.gddRatio - 100) * 2 - Math.max(0, metric.hotDays - 5) * 1.5,
+    0,
+    100,
+  );
+  const moistureFit = clamp(100 - Math.abs(metric.rainfallRatio - 100), 0, 100);
+  const sunshineProxyFit = sunshineDataAvailable
+    ? clamp(70 + (metric.sunshineRatio - 100) * 2, 0, 100)
+    : 0;
+  const temperature = round((temperatureFit * 34) / 100);
+  const moisture = round((moistureFit * 33) / 100);
+  const sunshineProxy = round((sunshineProxyFit * 33) / 100);
+
+  return {
+    total: temperature + moisture + sunshineProxy,
+    breakdown: { temperature, moisture, sunshineProxy },
+    componentScores: {
+      temperatureFit: round(temperatureFit),
+      moistureFit: round(moistureFit),
+      sunshineProxyFit: round(sunshineProxyFit),
+    },
+  };
+}
+
+function getGrapeRisk(metric) {
+  if (
+    metric.hotDays >= 20 ||
+    metric.longestRainStreak >= 7 ||
+    metric.rainfallRatio >= 160 ||
+    metric.warningDays >= 6
+  ) {
+    return "높음";
+  }
+  if (
+    metric.hotDays >= 10 ||
+    metric.longestRainStreak >= 5 ||
+    metric.rainfallRatio >= 130 ||
+    metric.warningDays >= 3
+  ) {
+    return "주의";
+  }
+  return "낮음";
+}
+
+function ratioReason(label, ratio) {
+  if (ratio === null || ratio === undefined) return `${label} 관측값이 없어 점수에 반영하지 않았어요.`;
+  const difference = ratio - 100;
+  if (difference === 0) return `${label}이 최근 3개년 같은 기간 평균과 같아요.`;
+  return `${label}이 최근 3개년 같은 기간 평균보다 ${Math.abs(difference)}% ${difference > 0 ? "높아요" : "낮아요"}.`;
+}
+
+function buildGrapeReasons(metric) {
+  return [
+    ratioReason("누적 생육온도(GDD)", metric.gddRatio),
+    ratioReason("누적 일조시간", metric.sunshineRatio),
+    ratioReason("누적 강수량", metric.rainfallRatio),
+    `31℃ 이상 고온일 ${metric.hotDays}일, 최장 연속 강우 ${metric.longestRainStreak}일이 관측됐어요.`,
+  ];
+}
+
+function enrichGrapeMetric(metric, sourceStatus) {
+  const region = GRAPE_REGIONS.find((candidate) => candidate.id === metric.regionId);
+  const score = scoreGrapeMetrics(metric);
+
+  return {
+    region,
+    score: score.total,
+    scoreBreakdown: score.breakdown,
+    componentScores: score.componentScores,
+    risk: getGrapeRisk(metric),
+    metrics: {
+      gdd: metric.gdd,
+      gddBaseline: metric.gddBaseline,
+      gddRatio: metric.gddRatio,
+      averageTemperature: metric.averageTemperature,
+      hotDays: metric.hotDays,
+      sunshineHours: metric.sunshineHours,
+      sunshineBaselineHours: metric.sunshineBaselineHours,
+      sunshineRatio: metric.sunshineRatio,
+      rainfallMm: metric.rainfallMm,
+      rainfallBaselineMm: metric.rainfallBaselineMm,
+      rainfallRatio: metric.rainfallRatio,
+      rainyDays: metric.rainyDays,
+      longestRainStreak: metric.longestRainStreak,
+      humidityAverage: metric.humidityAverage,
+      windAverage: metric.windAverage,
+      warningDays: metric.warningDays,
+      observedDays: metric.observedDays,
+      sunshineDataAvailable: metric.sunshineDataAvailable ?? (metric.sunshineRatio !== null),
+    },
+    availability: { status: "unverified", label: "출하 데이터 연결 전" },
+    reasons: buildGrapeReasons(metric),
+    confidence: sourceStatus === "live" && metric.sunshineDataAvailable !== false ? "보통" : "낮음",
+  };
+}
+
+function buildGrapeDashboard(regions) {
+  return {
+    charts: [
+      {
+        id: "gdd",
+        type: "bar",
+        title: "3개년 대비 누적 GDD",
+        unit: "%",
+        baseline: 100,
+        values: regions.map(({ region, metrics }) => ({ region: region.name, value: metrics.gddRatio })),
+      },
+      {
+        id: "sunshineProxy",
+        type: "bar",
+        title: "3개년 대비 누적 일조",
+        unit: "%",
+        baseline: 100,
+        values: regions.map(({ region, metrics }) => ({ region: region.name, value: metrics.sunshineRatio })),
+      },
+      {
+        id: "rainfall",
+        type: "bar",
+        title: "3개년 대비 누적 강수",
+        unit: "%",
+        baseline: 100,
+        values: regions.map(({ region, metrics }) => ({ region: region.name, value: metrics.rainfallRatio })),
+      },
+      {
+        id: "scoreBreakdown",
+        type: "stacked-bar",
+        title: "추천 점수 구성",
+        unit: "점",
+        values: regions.map(({ region, scoreBreakdown }) => ({ region: region.name, ...scoreBreakdown })),
+      },
+    ],
   };
 }
 
@@ -512,6 +1030,146 @@ export async function createPearRecommendations({
   });
 }
 
+export function buildGrapeRecommendation({
+  metrics,
+  referenceDate,
+  sourceStatus,
+  windowStart,
+  windowEnd,
+  evidenceByRegion = {},
+  requestedDate = formatDate(referenceDate),
+  fallbackYears = 0,
+}) {
+  const ranked = metrics
+    .map((metric) => enrichGrapeMetric(metric, sourceStatus))
+    .sort(
+      (left, right) =>
+        right.score - left.score ||
+        right.componentScores.sunshineProxyFit - left.componentScores.sunshineProxyFit,
+    )
+    .map((item, index) => ({ ...item, rank: index + 1 }));
+
+  return {
+    fruit: {
+      id: "grape",
+      name: "포도",
+      cultivar: {
+        name: "캠벨얼리",
+        status: "국내 정량 근거 기준",
+        season: "만개 후 약 75~80일 성숙",
+      },
+    },
+    referenceDate: formatDate(referenceDate),
+    observationWindow: { start: windowStart, end: windowEnd },
+    candidateScope: {
+      count: GRAPE_REGIONS.length,
+      label: `기상청 포도 주산지 ${GRAPE_REGIONS.length}곳 중`,
+    },
+    rules: GRAPE_RULES,
+    recommendations: ranked.slice(0, 3),
+    candidates: ranked,
+    dashboard: buildGrapeDashboard(ranked),
+    dataUsage: {
+      scoring: GRAPE_RULES.scoring,
+      contextOnly: GRAPE_RULES.excludedFromScore,
+      rawFields: [
+        { field: "ymd", label: "관측일" },
+        { field: "dayAvgTa/dayMaxTa/dayMinTa", label: "평균·최고·최저기온" },
+        { field: "dayAvgRhm/dayMinRhm", label: "평균·최저습도" },
+        { field: "daySumRn", label: "일 강수량" },
+        { field: "dayAvgWs", label: "일 평균풍속" },
+        { field: "daySumSs", label: "일 누적일조시간" },
+        { field: "wrnCd/wrnCount", label: "기상특보 코드·발효 여부" },
+        { field: "areaId/paCropSpeId", label: "산지·작물 코드" },
+      ],
+      limitations: [
+        "현재 연결된 API에는 일사량(sumGsr)이 없어 일조시간(daySumSs)을 조건부 대체지표로 사용합니다.",
+        "장기간 일조가 모두 0으로 반환되는 관측망은 결측으로 처리하고 일조 점수와 신뢰도를 낮춥니다.",
+        "강수량은 관수·배수·토양수분을 포함하지 않으므로 실제 포도나무 수분상태와 같지 않습니다.",
+        "품종·농가별 착과량, 병해, 수확일, 표본 당도·산도·경도 데이터는 포함되지 않습니다.",
+      ],
+    },
+    evidenceByRegion,
+    source: {
+      status: sourceStatus,
+      label: sourceStatus === "live" ? "기상청 실측 자료" : "UI 개발용 합성 데이터",
+      requestedDate,
+      fallbackYears,
+      note:
+        fallbackYears > 0
+          ? `요청 시점 자료가 없어 ${fallbackYears}년 전 같은 기간의 최신 가용 실측 자료를 사용했습니다.`
+          : null,
+      updatedAt: new Date().toISOString(),
+      links: GRAPE_SOURCE_LINKS,
+    },
+  };
+}
+
+export async function createGrapeRecommendations({
+  serviceKey,
+  date = todayInKorea(),
+  mode = "auto",
+  fetchImpl = fetch,
+} = {}) {
+  const referenceDate = parseDate(date);
+  if (!referenceDate) {
+    const error = new Error("date는 YYYY-MM-DD 형식이어야 합니다.");
+    error.status = 400;
+    throw error;
+  }
+
+  const shouldUseLiveData = mode === "live" || (mode === "auto" && serviceKey);
+  if (!["auto", "live", "demo"].includes(mode)) {
+    const error = new Error("mode는 auto, live, demo 중 하나여야 합니다.");
+    error.status = 400;
+    throw error;
+  }
+  if (mode === "live" && !serviceKey) {
+    const error = new Error("실측 모드에는 DATA_GO_KR_SERVICE_KEY가 필요합니다.");
+    error.status = 503;
+    throw error;
+  }
+
+  const windowStartDate = addDays(referenceDate, -GRAPE_RULES.observationWindow.startDaysBefore);
+  const windowEndDate = addDays(referenceDate, -GRAPE_RULES.observationWindow.endDaysBefore);
+
+  if (!shouldUseLiveData) {
+    return buildGrapeRecommendation({
+      metrics: GRAPE_DEMO_METRICS,
+      referenceDate,
+      sourceStatus: "demo",
+      windowStart: formatDate(windowStartDate),
+      windowEnd: formatDate(windowEndDate),
+    });
+  }
+
+  let live;
+  let liveReferenceDate = referenceDate;
+  let fallbackYears = 0;
+
+  for (let offset = 0; offset <= 2; offset += 1) {
+    liveReferenceDate = addYears(referenceDate, -offset);
+    try {
+      live = await collectGrapeLiveMetrics({ serviceKey, referenceDate: liveReferenceDate, fetchImpl });
+      fallbackYears = offset;
+      break;
+    } catch (error) {
+      if (error?.code !== "NO_DATA" || offset === 2) throw error;
+    }
+  }
+
+  return buildGrapeRecommendation({
+    metrics: live.metrics,
+    evidenceByRegion: live.evidenceByRegion,
+    referenceDate: liveReferenceDate,
+    sourceStatus: "live",
+    windowStart: live.windowStart,
+    windowEnd: live.windowEnd,
+    requestedDate: formatDate(referenceDate),
+    fallbackYears,
+  });
+}
+
 function withCacheMetadata(result, status, expiresAt) {
   return {
     ...result,
@@ -559,6 +1217,42 @@ export async function getCachedPearRecommendations({
   }
 }
 
+export async function getCachedGrapeRecommendations({
+  serviceKey,
+  date = todayInKorea(),
+  mode = "auto",
+  fetchImpl = fetch,
+} = {}) {
+  const cacheKey = `grape:${date}:${mode}:${Boolean(serviceKey)}`;
+  const now = Date.now();
+  const cached = recommendationCache.get(cacheKey);
+
+  if (cached && cached.expiresAt > now) {
+    return withCacheMetadata(cached.result, "hit", cached.expiresAt);
+  }
+  if (cached) recommendationCache.delete(cacheKey);
+
+  const pending = pendingRecommendations.get(cacheKey);
+  if (pending) {
+    const entry = await pending;
+    return withCacheMetadata(entry.result, "shared", entry.expiresAt);
+  }
+
+  const request = createGrapeRecommendations({ serviceKey, date, mode, fetchImpl }).then((result) => {
+    const entry = { result, expiresAt: Date.now() + RECOMMENDATION_CACHE_TTL_MS };
+    recommendationCache.set(cacheKey, entry);
+    return entry;
+  });
+  pendingRecommendations.set(cacheKey, request);
+
+  try {
+    const entry = await request;
+    return withCacheMetadata(entry.result, "miss", entry.expiresAt);
+  } finally {
+    pendingRecommendations.delete(cacheKey);
+  }
+}
+
 async function handleApi(request, env) {
   const url = new URL(request.url);
 
@@ -582,6 +1276,29 @@ async function handleApi(request, env) {
       return json(
         {
           error: "PEAR_RECOMMENDATION_FAILED",
+          message: error instanceof Error ? error.message : "추천 데이터를 만들지 못했습니다.",
+        },
+        { status: error?.status ?? 502, headers: { "cache-control": "no-store" } },
+      );
+    }
+  }
+
+  if (url.pathname === "/api/recommendations/grape" && request.method === "GET") {
+    try {
+      const result = await getCachedGrapeRecommendations({
+        serviceKey: env.DATA_GO_KR_SERVICE_KEY,
+        date: url.searchParams.get("date") ?? todayInKorea(),
+        mode: url.searchParams.get("mode") ?? "auto",
+      });
+
+      const cacheControl = result.source.status === "live" ? "public, max-age=900, s-maxage=21600" : "no-store";
+      return json(result, {
+        headers: { "cache-control": cacheControl, "x-grape-cache": result.cache.status },
+      });
+    } catch (error) {
+      return json(
+        {
+          error: "GRAPE_RECOMMENDATION_FAILED",
           message: error instanceof Error ? error.message : "추천 데이터를 만들지 못했습니다.",
         },
         { status: error?.status ?? 502, headers: { "cache-control": "no-store" } },
