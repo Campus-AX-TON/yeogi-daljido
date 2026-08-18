@@ -1,6 +1,10 @@
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
-import { getCachedGrapeRecommendations, getCachedPearRecommendations } from "./worker/index.js";
+import {
+  getCachedAppleRecommendations,
+  getCachedGrapeRecommendations,
+  getCachedPearRecommendations,
+} from "./worker/index.js";
 
 function localRecommendationApi(serviceKey) {
   return {
@@ -12,6 +16,7 @@ function localRecommendationApi(serviceKey) {
         const getRecommendations = {
           pear: getCachedPearRecommendations,
           grape: getCachedGrapeRecommendations,
+          apple: getCachedAppleRecommendations,
         }[fruitId];
 
         if (!getRecommendations || !url.pathname.startsWith("/api/recommendations/")) {

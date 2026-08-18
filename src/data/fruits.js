@@ -21,10 +21,10 @@ export const FRUITS = [
     id: "apple",
     name: "사과",
     accent: "apple",
-    season: "준비 중",
-    seasonNote: "사과 데이터 준비 중",
-    heroLine: "사과 추천은 곧 만나요.",
-    available: false,
+    season: "출하 임박",
+    seasonNote: "기상청 사과 주산지 실측 데이터",
+    heroLine: "지금 사과, 어디가 가장 좋을까?",
+    available: true,
   },
 ];
 

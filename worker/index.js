@@ -3,6 +3,7 @@ const KMA_DAILY_STATISTICS_URL =
 
 const PEAR_CROP_ID = "PA160101";
 const GRAPE_CROP_ID = "PA340101";
+const APPLE_CROP_ID = "PA200101";
 const RECOMMENDATION_CACHE_TTL_MS = 30 * 60 * 1000;
 const recommendationCache = new Map();
 const pendingRecommendations = new Map();
@@ -22,6 +23,22 @@ const GRAPE_REGIONS = [
   { id: "4159000000", name: "화성", province: "경기", latitude: 37.1995, longitude: 126.8312 },
   { id: "4373000000", name: "옥천", province: "충북", latitude: 36.3064, longitude: 127.5714 },
   { id: "4182000000", name: "가평", province: "경기", latitude: 37.8315, longitude: 127.5096 },
+];
+
+const APPLE_REGIONS = [
+  { id: "4775000000", name: "청송", province: "경북", latitude: 36.4363, longitude: 129.0571 },
+  { id: "4728000000", name: "문경", province: "경북", latitude: 36.5865, longitude: 128.1868 },
+  { id: "4721000000", name: "영주", province: "경북", latitude: 36.8057, longitude: 128.624 },
+  { id: "4717000000", name: "안동", province: "경북", latitude: 36.5684, longitude: 128.7294 },
+  { id: "4773000000", name: "의성", province: "경북", latitude: 36.3527, longitude: 128.6972 },
+  { id: "2772000000", name: "군위", province: "대구", latitude: 36.2429, longitude: 128.5728 },
+  { id: "4725000000", name: "상주", province: "경북", latitude: 36.4109, longitude: 128.1591 },
+  { id: "4313000000", name: "충주", province: "충북", latitude: 36.991, longitude: 127.9259 },
+  { id: "4574000000", name: "장수", province: "전북", latitude: 35.6473, longitude: 127.5212 },
+  { id: "4573000000", name: "무주", province: "전북", latitude: 36.0069, longitude: 127.6608 },
+  { id: "4888000000", name: "거창", province: "경남", latitude: 35.6867, longitude: 127.9095 },
+  { id: "4481000000", name: "예산", province: "충남", latitude: 36.6828, longitude: 126.8489 },
+  { id: "4827000000", name: "밀양", province: "경남", latitude: 35.5038, longitude: 128.7466 },
 ];
 
 const DEMO_METRICS = [
@@ -175,6 +192,30 @@ const GRAPE_DEMO_METRICS = [
   },
 ];
 
+const APPLE_DEMO_METRICS = APPLE_REGIONS.map((region, index) => ({
+  regionId: region.id,
+  sunshineHours: 248 - index * 4,
+  sunshineBaselineHours: 230,
+  sunshineRatio: round(((248 - index * 4) / 230) * 100),
+  rainfallMm: 118 + index * 9,
+  rainfallBaselineMm: 150,
+  rainfallRatio: round(((118 + index * 9) / 150) * 100),
+  averageDayNightRange: round(10.8 - index * 0.15, 1),
+  dayNightRangeBaseline: 9.8,
+  dayNightRangeRatio: round(((10.8 - index * 0.15) / 9.8) * 100),
+  averageTemperature: round(22.4 + index * 0.1, 1),
+  maxTemperature: round(31.2 + index * 0.2, 1),
+  minTemperature: round(13.1 + index * 0.1, 1),
+  hotDays: 2 + Math.floor(index / 4),
+  rainyDays: 11 + Math.floor(index / 3),
+  longestRainStreak: 2 + Math.floor(index / 5),
+  humidityAverage: 70 + Math.floor(index / 3),
+  windAverage: round(1.1 + index * 0.05, 1),
+  warningDays: Math.floor(index / 5),
+  observedDays: 43,
+  sunshineDataAvailable: true,
+}));
+
 const SOURCE_LINKS = {
   weather: "https://www.data.go.kr/data/15059518/openapi.do",
   varieties: "https://www.rda.go.kr/middlePopOpenPopNongsaroDBView.do?no=2019",
@@ -187,6 +228,15 @@ const GRAPE_SOURCE_LINKS = {
   harvestGuide: "https://www.rda.go.kr/middlePopOpenPopNongsaroDBView.do?no=1548",
   evidence:
     "https://app.notion.com/p/3bb41d2e95b380ffaecaea9b2b4f354d",
+};
+
+const APPLE_SOURCE_LINKS = {
+  weather: "https://www.data.go.kr/data/15059518/openapi.do",
+  qualityEvidence:
+    "https://repository.krei.re.kr/bitstream/2018.oak/14894/1/%EC%82%AC%EA%B3%BC%20%EC%83%9D%EC%82%B0%EA%B4%80%EC%B8%A1%20%EA%B0%9C%EC%84%A0%EB%B0%A9%EC%95%88%20%EC%97%B0%EA%B5%AC.pdf",
+  cultivarSeason:
+    "https://www.rda.go.kr/board/board.do?boardId=farmprmninfo&currPage=67&dataNo=100000802112&mode=updateCnt&prgId=day_farmprmninfoEntry",
+  researchMemo: "https://app.notion.com/p/3bb41d2e95b380ffaecaea9b2b4f354d",
 };
 
 const RULES = {
@@ -262,6 +312,49 @@ const GRAPE_RULES = {
   ],
 };
 
+const APPLE_RULES = {
+  model: "apple-weather-suitability-v0.1",
+  label: "사과 착색·당도 형성기상 적합도",
+  disclaimer:
+    "실제 당도·산도·경도·착색도나 개별 상품 품질을 예측하지 않습니다. 수확 전 기상 여건을 지역별 최근 3개년 동기간과 비교하는 프로토타입 지표입니다.",
+  observationWindow: {
+    startDaysBefore: 45,
+    endDaysBefore: 3,
+    historicalYears: 3,
+    droughtExclusionRatio: 50,
+  },
+  scoring: [
+    {
+      id: "sunshine",
+      label: "일조 여건",
+      weight: 40,
+      sourceFields: ["daySumSs"],
+      description: "수확 전 누적 일조시간을 같은 지역의 최근 3개년 같은 기간 평균과 비교합니다.",
+    },
+    {
+      id: "rainfall",
+      label: "강수 여건",
+      weight: 40,
+      sourceFields: ["daySumRn"],
+      description:
+        "과습은 감점하되 평년 강수의 50% 미만인 강한 건조는 가뭄 위험으로 추천에서 제외합니다.",
+    },
+    {
+      id: "dayNightRange",
+      label: "일교차 보조지표",
+      weight: 20,
+      sourceFields: ["dayMaxTa", "dayMinTa"],
+      description: "일 최고·최저기온 차의 기간 평균을 같은 지역의 최근 3개년 평균과 비교합니다.",
+    },
+  ],
+  excludedFromScore: [
+    { id: "heat", label: "30℃ 이상 고온일", reason: "착색 저해 위험을 설명하는 참고값으로 표시합니다." },
+    { id: "humidity", label: "습도", reason: "병해 위험을 해석하는 참고값으로 표시합니다." },
+    { id: "wind", label: "풍속", reason: "낙과·재해 위험을 해석하는 참고값으로 표시합니다." },
+    { id: "warning", label: "기상특보", reason: "재해 위험을 해석하는 참고값으로 표시합니다." },
+  ],
+};
+
 function json(data, init = {}) {
   const headers = new Headers(init.headers);
   headers.set("content-type", "application/json; charset=utf-8");
@@ -322,6 +415,24 @@ function getCultivar(date) {
   }
 
   return { name: "저장 배", status: "생과 비제철", season: "산지별 저장 출하" };
+}
+
+function getAppleCultivar(date) {
+  const monthDay = formatDate(date).slice(5);
+
+  if (monthDay < "08-15" || monthDay > "11-20") {
+    return { name: "저장 사과", status: "생과 비제철", season: "산지별 저장 출하" };
+  }
+  if (monthDay < "08-25") {
+    return { name: "홍로·아리수", status: "출하 임박", season: "8월 하순~9월 중순" };
+  }
+  if (monthDay <= "09-20") {
+    return { name: "홍로·아리수", status: "제철", season: "8월 하순~9월 중순" };
+  }
+  if (monthDay <= "10-15") {
+    return { name: "감홍 등 중생종", status: "제철", season: "9월 하순~10월 중순" };
+  }
+  return { name: "후지", status: "제철", season: "10월 하순~11월 중순" };
 }
 
 function number(value) {
@@ -457,6 +568,27 @@ function summarizeGrapeRows(rows) {
     rainfallMm: round(rows.reduce((total, row) => total + row.rainfallMm, 0), 1),
     averageTemperature: round(average(rows.map((row) => row.averageTemperature)), 1),
     hotDays: rows.filter((row) => row.maximumTemperature >= 31).length,
+    rainyDays: rows.filter((row) => row.rainfallMm > 0).length,
+    longestRainStreak: longestRainStreak(rows),
+    humidityAverage: round(average(rows.map((row) => row.averageHumidity)), 1),
+    windAverage: round(average(rows.map((row) => row.averageWindSpeed)), 1),
+    warningDays: rows.filter((row) => row.warningCount > 0).length,
+    observedDays: rows.length,
+  };
+}
+
+function summarizeAppleRows(rows) {
+  return {
+    sunshineHours: round(rows.reduce((total, row) => total + row.sunshineHours, 0), 1),
+    rainfallMm: round(rows.reduce((total, row) => total + row.rainfallMm, 0), 1),
+    averageDayNightRange: round(
+      average(rows.map((row) => Math.max(0, row.maximumTemperature - row.minimumTemperature))),
+      1,
+    ),
+    averageTemperature: round(average(rows.map((row) => row.averageTemperature)), 1),
+    maxTemperature: round(Math.max(...rows.map((row) => row.maximumTemperature)), 1),
+    minTemperature: round(Math.min(...rows.map((row) => row.minimumTemperature)), 1),
+    hotDays: rows.filter((row) => row.maximumTemperature >= 30).length,
     rainyDays: rows.filter((row) => row.rainfallMm > 0).length,
     longestRainStreak: longestRainStreak(rows),
     humidityAverage: round(average(rows.map((row) => row.averageHumidity)), 1),
@@ -686,6 +818,109 @@ async function collectGrapeLiveMetrics({ serviceKey, referenceDate, fetchImpl })
   };
 }
 
+async function collectAppleLiveMetrics({ serviceKey, referenceDate, fetchImpl }) {
+  const windowStart = addDays(referenceDate, -APPLE_RULES.observationWindow.startDaysBefore);
+  const windowEnd = addDays(referenceDate, -APPLE_RULES.observationWindow.endDaysBefore);
+
+  const collected = await mapWithConcurrency(
+    APPLE_REGIONS,
+    2,
+    async (region) => {
+      const recentRaw = await fetchKmaDailyStatistics({
+        serviceKey,
+        region,
+        startDate: windowStart,
+        endDate: windowEnd,
+        cropId: APPLE_CROP_ID,
+        fetchImpl,
+      });
+      const recent = normalizeDailyRows(recentRaw);
+
+      if (recent.length === 0) {
+        const error = new Error(`${region.name}의 최근 사과 기상 관측값이 없습니다.`);
+        error.code = "NO_DATA";
+        throw error;
+      }
+
+      const historicalSummaries = [];
+      for (let offset = 1; offset <= APPLE_RULES.observationWindow.historicalYears; offset += 1) {
+        const historicalStart = addYears(windowStart, -offset);
+        const historicalEnd = addYears(windowEnd, -offset);
+        const historicalRaw = await fetchKmaDailyStatistics({
+          serviceKey,
+          region,
+          startDate: historicalStart,
+          endDate: historicalEnd,
+          cropId: APPLE_CROP_ID,
+          fetchImpl,
+        });
+        const historical = normalizeDailyRows(historicalRaw);
+
+        if (historical.length === 0) {
+          const error = new Error(`${region.name}의 ${offset}년 전 사과 기준 관측값이 없습니다.`);
+          error.code = "NO_DATA";
+          throw error;
+        }
+
+        historicalSummaries.push({
+          yearOffset: offset,
+          start: formatDate(historicalStart),
+          end: formatDate(historicalEnd),
+          ...summarizeAppleRows(historical),
+        });
+      }
+
+      const current = summarizeAppleRows(recent);
+      const sunshineBaseline = average(historicalSummaries.map((summary) => summary.sunshineHours));
+      const rainfallBaseline = average(historicalSummaries.map((summary) => summary.rainfallMm));
+      const dayNightRangeBaseline = average(
+        historicalSummaries.map((summary) => summary.averageDayNightRange),
+      );
+      const sunshineDataAvailable = current.sunshineHours > 0 && sunshineBaseline > 0;
+
+      return {
+        metric: {
+          regionId: region.id,
+          ...current,
+          sunshineHours: sunshineDataAvailable ? current.sunshineHours : null,
+          sunshineBaselineHours: sunshineDataAvailable ? round(sunshineBaseline, 1) : null,
+          sunshineRatio: sunshineDataAvailable
+            ? round((current.sunshineHours / sunshineBaseline) * 100)
+            : null,
+          sunshineDataAvailable,
+          rainfallBaselineMm: round(rainfallBaseline, 1),
+          rainfallRatio: rainfallBaseline > 0 ? round((current.rainfallMm / rainfallBaseline) * 100) : 100,
+          dayNightRangeBaseline: round(dayNightRangeBaseline, 1),
+          dayNightRangeRatio:
+            dayNightRangeBaseline > 0
+              ? round((current.averageDayNightRange / dayNightRangeBaseline) * 100)
+              : 100,
+        },
+        evidence: {
+          source: "기상청 작물별 농업주산지 상세날씨 일통계",
+          rawResponseRows: recentRaw,
+          normalizedDailyRows: recent,
+          historicalSummaries,
+          notes: [
+            "기상청이 제공한 최근 관측 원본 행을 생략하지 않고 보존합니다.",
+            "같은 날짜에 복수 특보가 있으면 원본 행은 모두 보존하고 계산용 일자료에서는 기상값을 한 번만 반영합니다.",
+            "최근 3개년 원본은 호출·응답 크기를 줄이기 위해 연도별 계산 요약으로 제공합니다.",
+          ],
+        },
+      };
+    },
+  );
+
+  return {
+    metrics: collected.map(({ metric }) => metric),
+    evidenceByRegion: Object.fromEntries(
+      collected.map(({ metric, evidence }) => [metric.regionId, evidence]),
+    ),
+    windowStart: formatDate(windowStart),
+    windowEnd: formatDate(windowEnd),
+  };
+}
+
 function scoreGrapeMetrics(metric) {
   const sunshineDataAvailable = metric.sunshineDataAvailable ?? (metric.sunshineRatio !== null);
   const temperatureFit = clamp(
@@ -810,6 +1045,138 @@ function buildGrapeDashboard(regions) {
         unit: "%",
         baseline: 100,
         values: regions.map(({ region, metrics }) => ({ region: region.name, value: metrics.rainfallRatio })),
+      },
+      {
+        id: "scoreBreakdown",
+        type: "stacked-bar",
+        title: "추천 점수 구성",
+        unit: "점",
+        values: regions.map(({ region, scoreBreakdown }) => ({ region: region.name, ...scoreBreakdown })),
+      },
+    ],
+  };
+}
+
+function scoreAppleMetrics(metric) {
+  const sunshineDataAvailable = metric.sunshineDataAvailable ?? metric.sunshineRatio !== null;
+  const droughtExcluded = metric.rainfallRatio < APPLE_RULES.observationWindow.droughtExclusionRatio;
+  const sunshineFit = sunshineDataAvailable
+    ? clamp(70 + (metric.sunshineRatio - 100) * 2, 0, 100)
+    : 0;
+  const rainfallFit = droughtExcluded
+    ? 0
+    : metric.rainfallRatio <= 100
+      ? clamp(70 + (100 - metric.rainfallRatio) * 0.6, 0, 100)
+      : clamp(100 - (metric.rainfallRatio - 100) * 1.5, 0, 100);
+  const dayNightRangeFit = clamp(70 + (metric.dayNightRangeRatio - 100) * 2, 0, 100);
+  const sunshine = round((sunshineFit * 40) / 100);
+  const rainfall = round((rainfallFit * 40) / 100);
+  const dayNightRange = round((dayNightRangeFit * 20) / 100);
+
+  return {
+    total: sunshine + rainfall + dayNightRange,
+    breakdown: { sunshine, rainfall, dayNightRange },
+    componentScores: {
+      sunshineFit: round(sunshineFit),
+      rainfallFit: round(rainfallFit),
+      dayNightRangeFit: round(dayNightRangeFit),
+    },
+    eligible: !droughtExcluded,
+  };
+}
+
+function getAppleRisk(metric, eligible) {
+  if (!eligible || metric.hotDays >= 12 || metric.longestRainStreak >= 7 || metric.warningDays >= 5) {
+    return "높음";
+  }
+  if (metric.hotDays >= 6 || metric.longestRainStreak >= 4 || metric.warningDays >= 2) return "주의";
+  return "낮음";
+}
+
+function buildAppleReasons(metric, eligible) {
+  const rainReason = !eligible
+    ? `누적 강수가 최근 3개년 같은 기간 평균의 ${metric.rainfallRatio}%로, 가뭄 안전선 50%보다 낮아 추천에서 제외했어요.`
+    : ratioReason("누적 강수량", metric.rainfallRatio);
+
+  return [
+    ratioReason("누적 일조시간", metric.sunshineRatio),
+    rainReason,
+    ratioReason("평균 일교차 값", metric.dayNightRangeRatio),
+    `30℃ 이상 고온일 ${metric.hotDays}일, 최장 연속 강우 ${metric.longestRainStreak}일, 기상특보 ${metric.warningDays}일이 관측됐어요.`,
+  ];
+}
+
+function enrichAppleMetric(metric, sourceStatus) {
+  const region = APPLE_REGIONS.find((candidate) => candidate.id === metric.regionId);
+  const score = scoreAppleMetrics(metric);
+
+  return {
+    region,
+    score: score.total,
+    scoreBreakdown: score.breakdown,
+    componentScores: score.componentScores,
+    eligible: score.eligible,
+    eligibility: score.eligible
+      ? { status: "eligible", label: "추천 대상" }
+      : { status: "excluded", label: "강한 건조로 추천 제외" },
+    risk: getAppleRisk(metric, score.eligible),
+    metrics: {
+      sunshineHours: metric.sunshineHours,
+      sunshineBaselineHours: metric.sunshineBaselineHours,
+      sunshineRatio: metric.sunshineRatio,
+      rainfallMm: metric.rainfallMm,
+      rainfallBaselineMm: metric.rainfallBaselineMm,
+      rainfallRatio: metric.rainfallRatio,
+      averageDayNightRange: metric.averageDayNightRange,
+      dayNightRangeBaseline: metric.dayNightRangeBaseline,
+      dayNightRangeRatio: metric.dayNightRangeRatio,
+      averageTemperature: metric.averageTemperature,
+      maxTemperature: metric.maxTemperature,
+      minTemperature: metric.minTemperature,
+      hotDays: metric.hotDays,
+      rainyDays: metric.rainyDays,
+      longestRainStreak: metric.longestRainStreak,
+      humidityAverage: metric.humidityAverage,
+      windAverage: metric.windAverage,
+      warningDays: metric.warningDays,
+      observedDays: metric.observedDays,
+      sunshineDataAvailable: metric.sunshineDataAvailable ?? metric.sunshineRatio !== null,
+    },
+    availability: { status: "unverified", label: "출하 데이터 연결 전" },
+    reasons: buildAppleReasons(metric, score.eligible),
+    confidence: sourceStatus === "live" && metric.sunshineDataAvailable !== false ? "보통" : "낮음",
+  };
+}
+
+function buildAppleDashboard(regions) {
+  return {
+    charts: [
+      {
+        id: "sunshine",
+        type: "bar",
+        title: "3개년 대비 누적 일조",
+        unit: "%",
+        baseline: 100,
+        values: regions.map(({ region, metrics }) => ({ region: region.name, value: metrics.sunshineRatio })),
+      },
+      {
+        id: "rainfall",
+        type: "bar",
+        title: "3개년 대비 누적 강수",
+        unit: "%",
+        baseline: 100,
+        values: regions.map(({ region, metrics }) => ({ region: region.name, value: metrics.rainfallRatio })),
+      },
+      {
+        id: "dayNightRange",
+        type: "bar",
+        title: "3개년 대비 평균 일교차",
+        unit: "%",
+        baseline: 100,
+        values: regions.map(({ region, metrics }) => ({
+          region: region.name,
+          value: metrics.dayNightRangeRatio,
+        })),
       },
       {
         id: "scoreBreakdown",
@@ -1170,6 +1537,145 @@ export async function createGrapeRecommendations({
   });
 }
 
+export function buildAppleRecommendation({
+  metrics,
+  referenceDate,
+  sourceStatus,
+  windowStart,
+  windowEnd,
+  evidenceByRegion = {},
+  requestedDate = formatDate(referenceDate),
+  fallbackYears = 0,
+}) {
+  const ranked = metrics
+    .map((metric) => enrichAppleMetric(metric, sourceStatus))
+    .sort(
+      (left, right) =>
+        Number(right.eligible) - Number(left.eligible) ||
+        right.score - left.score ||
+        right.componentScores.sunshineFit - left.componentScores.sunshineFit,
+    )
+    .map((item, index) => ({ ...item, candidateRank: index + 1 }));
+  const recommendations = ranked
+    .filter((item) => item.eligible)
+    .slice(0, 3)
+    .map((item, index) => ({ ...item, rank: index + 1 }));
+
+  return {
+    fruit: { id: "apple", name: "사과", cultivar: getAppleCultivar(referenceDate) },
+    referenceDate: formatDate(referenceDate),
+    observationWindow: { start: windowStart, end: windowEnd },
+    candidateScope: {
+      count: APPLE_REGIONS.length,
+      eligibleCount: ranked.filter((item) => item.eligible).length,
+      label: `기상청 사과 주산지 ${APPLE_REGIONS.length}곳 중`,
+    },
+    rules: APPLE_RULES,
+    recommendations,
+    candidates: ranked,
+    dashboard: buildAppleDashboard(ranked),
+    dataUsage: {
+      scoring: APPLE_RULES.scoring,
+      contextOnly: APPLE_RULES.excludedFromScore,
+      rawFields: [
+        { field: "ymd", label: "관측일" },
+        { field: "dayAvgTa/dayMaxTa/dayMinTa", label: "평균·최고·최저기온과 일교차" },
+        { field: "dayAvgRhm/dayMinRhm", label: "평균·최저습도" },
+        { field: "daySumRn", label: "일 강수량" },
+        { field: "dayAvgWs", label: "일 평균풍속" },
+        { field: "daySumSs", label: "일 누적일조시간" },
+        { field: "wmCd/wrnCd, wmCount/wrnCount", label: "기상특보 코드·발효 여부" },
+        { field: "areaId/paCropSpeId", label: "산지·작물 코드" },
+      ],
+      limitations: [
+        "기상 조건만 비교하며 실제 사과의 당도·산도·경도·착색도 측정값은 포함하지 않습니다.",
+        "현재 API는 품종을 '-'로 제공하므로 기준일에 따라 대표 출하시기 품종을 안내용으로 표시합니다.",
+        "강수량은 관수·토양수분·배수 상태를 포함하지 않아 실제 과원의 수분상태와 같지 않습니다.",
+        "일조 관측이 장기간 0인 관측망은 결측으로 처리하고 일조 점수와 신뢰도를 낮춥니다.",
+        "일교차는 착색 관련 보조지표이며, 고도·수관관리·착과량·병해·저장 상태는 반영하지 않습니다.",
+      ],
+    },
+    evidenceByRegion,
+    source: {
+      status: sourceStatus,
+      label: sourceStatus === "live" ? "기상청 실측 자료" : "UI 개발용 합성 데이터",
+      requestedDate,
+      fallbackYears,
+      note:
+        fallbackYears > 0
+          ? `요청 시점 자료가 없어 ${fallbackYears}년 전 같은 기간의 최신 가용 실측 자료를 사용했습니다.`
+          : null,
+      updatedAt: new Date().toISOString(),
+      links: APPLE_SOURCE_LINKS,
+    },
+  };
+}
+
+export async function createAppleRecommendations({
+  serviceKey,
+  date = todayInKorea(),
+  mode = "auto",
+  fetchImpl = fetch,
+} = {}) {
+  const referenceDate = parseDate(date);
+  if (!referenceDate) {
+    const error = new Error("date는 YYYY-MM-DD 형식이어야 합니다.");
+    error.status = 400;
+    throw error;
+  }
+
+  const shouldUseLiveData = mode === "live" || (mode === "auto" && serviceKey);
+  if (!["auto", "live", "demo"].includes(mode)) {
+    const error = new Error("mode는 auto, live, demo 중 하나여야 합니다.");
+    error.status = 400;
+    throw error;
+  }
+  if (mode === "live" && !serviceKey) {
+    const error = new Error("실측 모드에는 DATA_GO_KR_SERVICE_KEY가 필요합니다.");
+    error.status = 503;
+    throw error;
+  }
+
+  const windowStartDate = addDays(referenceDate, -APPLE_RULES.observationWindow.startDaysBefore);
+  const windowEndDate = addDays(referenceDate, -APPLE_RULES.observationWindow.endDaysBefore);
+
+  if (!shouldUseLiveData) {
+    return buildAppleRecommendation({
+      metrics: APPLE_DEMO_METRICS,
+      referenceDate,
+      sourceStatus: "demo",
+      windowStart: formatDate(windowStartDate),
+      windowEnd: formatDate(windowEndDate),
+    });
+  }
+
+  let live;
+  let liveReferenceDate = referenceDate;
+  let fallbackYears = 0;
+
+  for (let offset = 0; offset <= 2; offset += 1) {
+    liveReferenceDate = addYears(referenceDate, -offset);
+    try {
+      live = await collectAppleLiveMetrics({ serviceKey, referenceDate: liveReferenceDate, fetchImpl });
+      fallbackYears = offset;
+      break;
+    } catch (error) {
+      if (error?.code !== "NO_DATA" || offset === 2) throw error;
+    }
+  }
+
+  return buildAppleRecommendation({
+    metrics: live.metrics,
+    evidenceByRegion: live.evidenceByRegion,
+    referenceDate: liveReferenceDate,
+    sourceStatus: "live",
+    windowStart: live.windowStart,
+    windowEnd: live.windowEnd,
+    requestedDate: formatDate(referenceDate),
+    fallbackYears,
+  });
+}
+
 function withCacheMetadata(result, status, expiresAt) {
   return {
     ...result,
@@ -1253,6 +1759,42 @@ export async function getCachedGrapeRecommendations({
   }
 }
 
+export async function getCachedAppleRecommendations({
+  serviceKey,
+  date = todayInKorea(),
+  mode = "auto",
+  fetchImpl = fetch,
+} = {}) {
+  const cacheKey = `apple:${date}:${mode}:${Boolean(serviceKey)}`;
+  const now = Date.now();
+  const cached = recommendationCache.get(cacheKey);
+
+  if (cached && cached.expiresAt > now) {
+    return withCacheMetadata(cached.result, "hit", cached.expiresAt);
+  }
+  if (cached) recommendationCache.delete(cacheKey);
+
+  const pending = pendingRecommendations.get(cacheKey);
+  if (pending) {
+    const entry = await pending;
+    return withCacheMetadata(entry.result, "shared", entry.expiresAt);
+  }
+
+  const request = createAppleRecommendations({ serviceKey, date, mode, fetchImpl }).then((result) => {
+    const entry = { result, expiresAt: Date.now() + RECOMMENDATION_CACHE_TTL_MS };
+    recommendationCache.set(cacheKey, entry);
+    return entry;
+  });
+  pendingRecommendations.set(cacheKey, request);
+
+  try {
+    const entry = await request;
+    return withCacheMetadata(entry.result, "miss", entry.expiresAt);
+  } finally {
+    pendingRecommendations.delete(cacheKey);
+  }
+}
+
 async function handleApi(request, env) {
   const url = new URL(request.url);
 
@@ -1299,6 +1841,29 @@ async function handleApi(request, env) {
       return json(
         {
           error: "GRAPE_RECOMMENDATION_FAILED",
+          message: error instanceof Error ? error.message : "추천 데이터를 만들지 못했습니다.",
+        },
+        { status: error?.status ?? 502, headers: { "cache-control": "no-store" } },
+      );
+    }
+  }
+
+  if (url.pathname === "/api/recommendations/apple" && request.method === "GET") {
+    try {
+      const result = await getCachedAppleRecommendations({
+        serviceKey: env.DATA_GO_KR_SERVICE_KEY,
+        date: url.searchParams.get("date") ?? todayInKorea(),
+        mode: url.searchParams.get("mode") ?? "auto",
+      });
+
+      const cacheControl = result.source.status === "live" ? "public, max-age=900, s-maxage=21600" : "no-store";
+      return json(result, {
+        headers: { "cache-control": cacheControl, "x-apple-cache": result.cache.status },
+      });
+    } catch (error) {
+      return json(
+        {
+          error: "APPLE_RECOMMENDATION_FAILED",
           message: error instanceof Error ? error.message : "추천 데이터를 만들지 못했습니다.",
         },
         { status: error?.status ?? 502, headers: { "cache-control": "no-store" } },

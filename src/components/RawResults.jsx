@@ -31,6 +31,27 @@ const metricLabelsByFruit = {
     ["warningDays", "기상특보 발생일", "일"],
     ["observedDays", "관측일", "일"],
   ],
+  apple: [
+    ["sunshineHours", "누적 일조", "시간"],
+    ["sunshineBaselineHours", "3개년 평균 일조", "시간"],
+    ["sunshineRatio", "최근 3년 대비 일조", "%"],
+    ["rainfallMm", "누적 강수", "mm"],
+    ["rainfallBaselineMm", "3개년 평균 강수", "mm"],
+    ["rainfallRatio", "최근 3년 대비 강수", "%"],
+    ["averageDayNightRange", "평균 일교차", "℃"],
+    ["dayNightRangeBaseline", "3개년 평균 일교차", "℃"],
+    ["dayNightRangeRatio", "최근 3년 대비 일교차", "%"],
+    ["averageTemperature", "기간 평균기온", "℃"],
+    ["maxTemperature", "최고기온", "℃"],
+    ["minTemperature", "최저기온", "℃"],
+    ["hotDays", "30℃ 이상 고온일", "일"],
+    ["rainyDays", "강우일", "일"],
+    ["longestRainStreak", "최장 연속 강우", "일"],
+    ["humidityAverage", "평균 습도", "%"],
+    ["windAverage", "평균 풍속", "m/s"],
+    ["warningDays", "기상특보 발생일", "일"],
+    ["observedDays", "관측일", "일"],
+  ],
 };
 
 function displayValue(value, unit) {
@@ -40,6 +61,10 @@ function displayValue(value, unit) {
 function scoreBreakdownText(result, recommendation) {
   if (result.fruit.id === "grape") {
     return `생육온도 ${recommendation.scoreBreakdown.temperature}점 / 수분 ${recommendation.scoreBreakdown.moisture}점 / 일조 대체지표 ${recommendation.scoreBreakdown.sunshineProxy}점`;
+  }
+
+  if (result.fruit.id === "apple") {
+    return `일조 ${recommendation.scoreBreakdown.sunshine}점 / 강수 ${recommendation.scoreBreakdown.rainfall}점 / 일교차 ${recommendation.scoreBreakdown.dayNightRange}점`;
   }
 
   return `일조 ${recommendation.scoreBreakdown.sunshine}점 / 고온 ${recommendation.scoreBreakdown.heat}점 / 강수 ${recommendation.scoreBreakdown.rain}점`;
@@ -118,6 +143,7 @@ export default function RawResults({
                     </h3>
                     <p>
                       위험도 {recommendation.risk} · 신뢰도 {recommendation.confidence}
+                      {recommendation.eligibility ? ` · ${recommendation.eligibility.label}` : ""}
                     </p>
                     <ul className="raw-reason-list">
                       {recommendation.reasons.map((reason) => (
