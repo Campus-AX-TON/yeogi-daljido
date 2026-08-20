@@ -19,20 +19,20 @@ export default function Home({ fruits, onSelect }) {
       <FruitBackdrop />
       <main className="home">
         <header className="home-hero">
-          <p className="eyebrow mono">SWEETNESS INTELLIGENCE MAP</p>
+          <p className="eyebrow mono">Seasonal Fruit Origin Map</p>
           <h1 className="pun">
-            여기, <span className="pun-accent">달</span>지도?
+            여기 <span className="pun-accent">달</span>지도
           </h1>
           <p className="lede">
-            여기달지도는 기후·생육·출하 데이터를 분석해
+            제철 과일, 어디서 살지 고민된다면?
             <br />
-            제철 과일의 진짜 단맛 산지를 알려주는 서비스예요.
+            기후데이터를 바탕으로 더 나은 산지 선택을 도와드려요.
           </p>
-          <p className="thesis">“그래서 지금, 이 과일은 어느 산지를 사는 게 좋을까?”</p>
+          <p className="thesis">“다가오는 추석, 어느 산지의 과일이 좋을까요?”</p>
         </header>
 
         <section className="picker" aria-label="과일 선택">
-          <p className="picker-label mono">과일을 선택하세요</p>
+          <p className="picker-label mono">과일을 선택하고 Top 3 산지를 확인하세요</p>
           <div className="picker-grid">
             {fruits.map((fruit) => (
               <button
@@ -48,9 +48,6 @@ export default function Home({ fruits, onSelect }) {
                 </span>
                 <span className="fruit-card-name">{fruit.name}</span>
                 <span className="fruit-card-season">{fruit.season}</span>
-                <span className="fruit-card-cta mono">
-                  {fruit.available ? "Top 3 산지 보기 →" : "데이터 준비 중"}
-                </span>
               </button>
             ))}
           </div>

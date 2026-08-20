@@ -115,7 +115,6 @@ button {
   color: var(--gold-text);
   font-size: 12px;
   letter-spacing: 0.14em;
-  text-transform: uppercase;
 }
 
 .pun {
@@ -171,7 +170,7 @@ button {
   align-items: center;
   gap: 10px;
   min-width: 0;
-  padding: 28px 16px 20px;
+  padding: 28px 16px;
   border: 1px solid var(--ink-line);
   border-radius: 20px;
   color: var(--text-on-ink);
@@ -193,10 +192,6 @@ button {
 
 .fruit-card:disabled {
   cursor: not-allowed;
-}
-
-.fruit-card:disabled .fruit-card-cta {
-  opacity: 0.58;
 }
 
 .fruit-card-badge {
@@ -240,16 +235,6 @@ button {
   background: var(--gold-dim);
   font-size: 12px;
   font-weight: 600;
-}
-
-.fruit-card-cta {
-  overflow: hidden;
-  max-width: 100%;
-  color: var(--text-on-ink-dim);
-  font-size: 11px;
-  letter-spacing: 0.02em;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .home-foot {
@@ -613,10 +598,6 @@ button {
   .fruit-card-icon {
     width: 34px;
     height: 40px;
-  }
-
-  .fruit-card-cta {
-    display: none;
   }
 
   .raw-results-page {
