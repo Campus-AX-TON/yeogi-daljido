@@ -71,7 +71,6 @@ function scoreBreakdownText(result, recommendation) {
 }
 
 export default function RawResults({
-  cooldown,
   errorMessage,
   fruit,
   onBack,
@@ -104,8 +103,8 @@ export default function RawResults({
           <div className="raw-error-message" role="alert">
             <strong>조회하지 못했습니다.</strong>
             <p>{errorMessage}</p>
-            <button disabled={cooldown > 0} onClick={onReload} type="button">
-              {cooldown > 0 ? `${cooldown}초 후 재조회` : "다시 조회"}
+            <button onClick={onReload} type="button">
+              다시 조회
             </button>
           </div>
         )}
@@ -114,13 +113,11 @@ export default function RawResults({
           <section className="raw-results" aria-labelledby="raw-results-title">
             <div className="raw-results-heading">
               <div>
-                <p className="raw-results-source">
-                  {result.source.label} · {result.cache.status === "miss" ? "새로 조회" : "캐시 사용"}
-                </p>
+                <p className="raw-results-source">{result.source.label}</p>
                 <h2 id="raw-results-title">{result.fruit.name} 산지 추천 Top 3</h2>
               </div>
-              <button disabled={cooldown > 0} onClick={onReload} type="button">
-                {cooldown > 0 ? `${cooldown}초 후 재조회` : "다시 조회"}
+              <button onClick={onReload} type="button">
+                다시 조회
               </button>
             </div>
 

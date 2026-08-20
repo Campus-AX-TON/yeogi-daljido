@@ -13,7 +13,7 @@ function todayInKorea() {
     .replace(/\.$/, "");
 }
 
-export default function Home({ fruits, cooldowns, onSelect }) {
+export default function Home({ fruits, onSelect }) {
   return (
     <>
       <FruitBackdrop />
@@ -34,34 +34,25 @@ export default function Home({ fruits, cooldowns, onSelect }) {
         <section className="picker" aria-label="과일 선택">
           <p className="picker-label mono">과일을 선택하세요</p>
           <div className="picker-grid">
-            {fruits.map((fruit) => {
-              const cooldown = cooldowns[fruit.id] ?? 0;
-              return (
-                <button
-                  key={fruit.id}
-                  className="fruit-card"
-                  data-accent={fruit.accent}
-                  disabled={!fruit.available}
-                  onClick={() => onSelect(fruit.id)}
-                  type="button"
-                >
-                  <span className="fruit-card-badge">
-                    <FruitIcon fruit={fruit.id} className="fruit-card-icon" />
-                  </span>
-                  <span className="fruit-card-name">{fruit.name}</span>
-                  <span className="fruit-card-season">
-                    {fruit.season}
-                  </span>
-                  <span className="fruit-card-cta mono">
-                    {fruit.available
-                      ? cooldown > 0
-                        ? "결과 다시 보기 →"
-                        : "Top 3 산지 보기 →"
-                      : "데이터 준비 중"}
-                  </span>
-                </button>
-              );
-            })}
+            {fruits.map((fruit) => (
+              <button
+                key={fruit.id}
+                className="fruit-card"
+                data-accent={fruit.accent}
+                disabled={!fruit.available}
+                onClick={() => onSelect(fruit.id)}
+                type="button"
+              >
+                <span className="fruit-card-badge">
+                  <FruitIcon fruit={fruit.id} className="fruit-card-icon" />
+                </span>
+                <span className="fruit-card-name">{fruit.name}</span>
+                <span className="fruit-card-season">{fruit.season}</span>
+                <span className="fruit-card-cta mono">
+                  {fruit.available ? "Top 3 산지 보기 →" : "데이터 준비 중"}
+                </span>
+              </button>
+            ))}
           </div>
         </section>
 
