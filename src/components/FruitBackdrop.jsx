@@ -8,9 +8,9 @@ const ITEMS = [
   { fruit: "apple", width: 130, style: { top: "48%", left: "-9%", transform: "rotate(18deg)", opacity: 0.07 } },
 ];
 
-export default function FruitBackdrop() {
+export default function FruitBackdrop({ variant = "home" }) {
   return (
-    <div className="fruit-backdrop" aria-hidden="true">
+    <div className={`fruit-backdrop fruit-backdrop--${variant}`} aria-hidden="true">
       {ITEMS.map((item, index) => (
         <FruitIcon
           key={`${item.fruit}-${index}`}

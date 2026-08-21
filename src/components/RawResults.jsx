@@ -1,3 +1,15 @@
+import { useState } from "react";
+import detailRainIcon from "../assets/detail-rain.png";
+import detailSunIcon from "../assets/detail-sun.png";
+import detailTemperatureIcon from "../assets/detail-temperature.png";
+import heroApple from "../assets/hero-apple-cutout.png";
+import heroGrape from "../assets/hero-grape-cutout.png";
+import heroPear from "../assets/hero-pear-cutout.png";
+import rankMedalBronze from "../assets/rank-medal-bronze.png";
+import rankMedalGold from "../assets/rank-medal-gold.png";
+import rankMedalSilver from "../assets/rank-medal-silver.png";
+import { getResultPresentation } from "../data/resultPresentation.js";
+import FruitBackdrop from "./FruitBackdrop.jsx";
 import ResultBarChart from "./ResultBarChart.jsx";
 import ResultRegionMap from "./ResultRegionMap.jsx";
 
@@ -7,84 +19,18 @@ const SCORE_COLORS = [
   "var(--report-series-c)",
 ];
 
-const METRICS_BY_FRUIT = {
-  pear: {
-    primary: [
-      ["sunshineHours", "일조시간", "시간"],
-      ["rainfallMm", "강수량", "mm"],
-    ],
-    secondary: [
-      ["sunshineRatio", "평년 대비 일조", "%"],
-      ["rainfallRatio", "평년 대비 강수", "%"],
-      ["hotDays", "31℃ 이상 고온일", "일"],
-    ],
-    tertiary: [
-      ["sunshineBaselineHours", "평년 일조시간", "시간"],
-      ["rainfallBaselineMm", "평년 강수량", "mm"],
-      ["maxTemperature", "최고기온", "℃"],
-      ["humidityAverage", "평균습도", "%"],
-      ["warningDays", "기상특보", "일"],
-      ["observedDays", "관측일수", "일"],
-    ],
-  },
-  grape: {
-    primary: [
-      ["gdd", "누적 생육온도(GDD)", "℃·일"],
-      ["sunshineHours", "누적 일조", "시간"],
-      ["rainfallMm", "누적 강수", "mm"],
-    ],
-    secondary: [
-      ["gddRatio", "최근 3년 대비 GDD", "%"],
-      ["sunshineRatio", "최근 3년 대비 일조", "%"],
-      ["rainfallRatio", "최근 3년 대비 강수", "%"],
-      ["hotDays", "31℃ 이상 고온일", "일"],
-      ["longestRainStreak", "최장 연속 강우", "일"],
-    ],
-    tertiary: [
-      ["gddBaseline", "3개년 평균 GDD", "℃·일"],
-      ["sunshineBaselineHours", "3개년 평균 일조", "시간"],
-      ["rainfallBaselineMm", "3개년 평균 강수", "mm"],
-      ["averageTemperature", "기간 평균기온", "℃"],
-      ["rainyDays", "강우일", "일"],
-      ["humidityAverage", "평균 습도", "%"],
-      ["windAverage", "평균 풍속", "m/s"],
-      ["warningDays", "기상특보", "일"],
-      ["observedDays", "관측일", "일"],
-    ],
-  },
-  apple: {
-    primary: [
-      ["sunshineHours", "누적 일조", "시간"],
-      ["rainfallMm", "누적 강수", "mm"],
-      ["averageDayNightRange", "평균 일교차", "℃"],
-    ],
-    secondary: [
-      ["sunshineRatio", "최근 3년 대비 일조", "%"],
-      ["rainfallRatio", "최근 3년 대비 강수", "%"],
-      ["dayNightRangeRatio", "최근 3년 대비 일교차", "%"],
-      ["hotDays", "30℃ 이상 고온일", "일"],
-      ["longestRainStreak", "최장 연속 강우", "일"],
-    ],
-    tertiary: [
-      ["sunshineBaselineHours", "3개년 평균 일조", "시간"],
-      ["rainfallBaselineMm", "3개년 평균 강수", "mm"],
-      ["dayNightRangeBaseline", "3개년 평균 일교차", "℃"],
-      ["averageTemperature", "평균기온", "℃"],
-      ["maxTemperature", "최고기온", "℃"],
-      ["minTemperature", "최저기온", "℃"],
-      ["rainyDays", "강우일", "일"],
-      ["humidityAverage", "평균 습도", "%"],
-      ["windAverage", "평균 풍속", "m/s"],
-      ["warningDays", "기상특보", "일"],
-      ["observedDays", "관측일", "일"],
-    ],
-  },
+const RANK_MEDALS = [rankMedalGold, rankMedalSilver, rankMedalBronze];
+
+const DETAIL_ICONS = {
+  rainfall: detailRainIcon,
+  sunshine: detailSunIcon,
+  temperature: detailTemperatureIcon,
 };
 
-const CHART_SCORE_KEY_BY_FRUIT = {
-  grape: { gdd: "temperature", rainfall: "moisture", sunshineProxy: "sunshineProxy" },
-  pear: { heat: "heat", rain: "rain", sunshine: "sunshine" },
-  apple: { dayNightRange: "dayNightRange", rainfall: "rainfall", sunshine: "sunshine" },
+const HERO_ASSETS = {
+  apple: heroApple,
+  grape: heroGrape,
+  pear: heroPear,
 };
 
 function displayValue(value, unit = "") {
@@ -106,12 +52,121 @@ function formatDateTime(iso) {
   return `${values.year}.${values.month}.${values.day} ${values.hour}:${values.minute}`;
 }
 
+function metricValue(metrics, definition) {
+  if (!definition.calculation) return metrics[definition.key];
+
+  if (definition.calculation.type === "percentage") {
+    const numerator = metrics[definition.calculation.numeratorKey];
+    const denominator = metrics[definition.calculation.denominatorKey];
+    if (numerator === null || numerator === undefined || !denominator) return null;
+    return Math.round((numerator / denominator) * 100);
+  }
+
+  throw new Error(`지원하지 않는 지표 계산 방식입니다: ${definition.calculation.type}`);
+}
+
 function metricItems(metrics, definitions) {
-  return definitions.map(([key, label, unit]) => ({
-    key,
-    label,
-    value: displayValue(metrics[key], unit),
-  }));
+  return definitions
+    .map((definition) => ({ definition, value: metricValue(metrics, definition) }))
+    .filter(({ value }) => value !== null && value !== undefined)
+    .map(({ definition, value }) => ({
+      key: definition.key,
+      label: definition.label,
+      value: displayValue(value, definition.unit),
+    }));
+}
+
+function ratioInterpretation(value, subject) {
+  if (value === null || value === undefined) {
+    return `${subject} 비교에 필요한 관측값이 부족해요.`;
+  }
+
+  if (value === 100) return `${subject} 수치가 최근 3년 평균과 비슷해요.`;
+  return `${subject} 수치가 최근 3년 평균보다 ${Math.abs(value - 100)}% ${value > 100 ? "높아요" : "낮아요"}.`;
+}
+
+function detailSectionInterpretation(interpretation, metrics) {
+  if (interpretation.type === "ratio") {
+    return ratioInterpretation(metrics[interpretation.key], interpretation.subject);
+  }
+
+  if (interpretation.type === "count") {
+    const value = metrics[interpretation.key];
+    if (value === null || value === undefined) return interpretation.missingText;
+    return `${interpretation.subject}이 ${value}${interpretation.unit} 관측됐어요.`;
+  }
+
+  throw new Error(`지원하지 않는 상세 해석 방식입니다: ${interpretation.type}`);
+}
+
+function withSubjectParticle(value) {
+  const lastCharacter = value.at(-1);
+  const code = lastCharacter?.charCodeAt(0) ?? 0;
+  const hasFinalConsonant = code >= 0xac00 && code <= 0xd7a3 && (code - 0xac00) % 28 !== 0;
+  return `${value}${hasFinalConsonant ? "이" : "가"}`;
+}
+
+function detailStorySteps(section, metrics) {
+  const steps = section.steps
+    .map((definition) => {
+      const value = metricValue(metrics, definition);
+      if (value === null || value === undefined) return null;
+      return {
+        eyebrow: definition.eyebrow,
+        key: definition.key,
+        label: definition.label,
+        value: displayValue(value, definition.unit),
+      };
+    })
+    .filter(Boolean);
+
+  if (section.fallback?.type === "normalized-ratio" && steps.length === section.fallback.whenVisibleStepCount) {
+    const ratio = metrics[section.fallback.ratioKey];
+    if (ratio === null || ratio === undefined) return steps;
+    const difference = ratio - 100;
+    return [
+      {
+        eyebrow: "관측 데이터",
+        key: section.fallback.ratioKey,
+        label: section.fallback.observedLabel,
+        value: displayValue(ratio, "%"),
+      },
+      {
+        eyebrow: "비교 기준",
+        key: section.fallback.baselineKey,
+        label: section.fallback.baselineLabel,
+        value: "100%",
+      },
+      {
+        eyebrow: "계산 결과",
+        key: section.fallback.differenceKey,
+        label: section.fallback.differenceLabel,
+        value: `${difference > 0 ? "+" : ""}${difference}%`,
+      },
+    ];
+  }
+
+  return steps;
+}
+
+function detailSectionExplanation(explanation, metrics) {
+  if (explanation.type === "fixed") return explanation.text;
+
+  if (explanation.type === "threshold") {
+    const value = metrics[explanation.key];
+    if (value === null || value === undefined) return explanation.missingText;
+    const outcome = explanation.outcomes.find(({ max }) => max === undefined || value <= max);
+    if (!outcome) {
+      throw new Error(`상세 설명 조건에 맞는 결과가 없습니다: ${explanation.key}`);
+    }
+    return outcome.text;
+  }
+
+  throw new Error(`지원하지 않는 상세 설명 방식입니다: ${explanation.type}`);
+}
+
+function supportingMetricItems(section, metrics) {
+  return metricItems(metrics, section.supportingMetrics);
 }
 
 function scoreCategories(result) {
@@ -124,85 +179,156 @@ function scoreCategories(result) {
   }));
 }
 
-function RegionCard({ categories, fruitId, recommendation }) {
-  const definitions = METRICS_BY_FRUIT[fruitId];
-  const primary = metricItems(recommendation.metrics, definitions.primary);
-  const secondary = metricItems(recommendation.metrics, definitions.secondary);
-  const tertiary = metricItems(recommendation.metrics, definitions.tertiary);
-  const total = Math.max(
-    categories.reduce((sum, category) => sum + (recommendation.scoreBreakdown[category.key] ?? 0), 0),
-    1,
+function RankMedal({ rank }) {
+  return (
+    <span className="report-rank-medal" aria-label={`${rank}위`}>
+      <img alt="" aria-hidden="true" src={RANK_MEDALS[rank - 1]} />
+      <strong>
+        {rank}<small>위</small>
+      </strong>
+    </span>
   );
+}
+
+function RegionCard({ isSelected, onToggle, presentation, recommendation }) {
+  const reasons = presentation.aiReasonsByRank[recommendation.rank];
+  if (!reasons) {
+    throw new Error(`${recommendation.rank}위 AI 추천 이유 설정이 없습니다.`);
+  }
 
   return (
-    <article className="report-pick-card">
-      <header className="report-pick-card-top">
-        <span className="report-rank-badge">#{recommendation.rank}</span>
-        <h3 className="report-region-name">
-          {recommendation.region.name}
-          <span>{recommendation.region.province}</span>
-        </h3>
-        <span className="report-score">
-          {recommendation.score}
-          <small>점</small>
-        </span>
-      </header>
-
-      <div className="report-breakdown" aria-label="추천 점수 구성">
-        <div className="report-stacked-track">
-          {categories.map((category) => {
-            const value = recommendation.scoreBreakdown[category.key] ?? 0;
-            return (
-              <span
-                className="report-stacked-segment"
-                key={category.key}
-                style={{
-                  "--segment-color": category.color,
-                  "--segment-width": `${(value / total) * 100}%`,
-                }}
-              />
-            );
-          })}
-        </div>
-        <div className="report-breakdown-legend">
-          {categories.map((category) => (
-            <span key={category.key}>
-              {category.label} {recommendation.scoreBreakdown[category.key] ?? 0}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      <div className="report-primary-metrics">
-        {primary.map((metric) => (
-          <div className="report-primary-metric" key={metric.key}>
-            <strong>{metric.value}</strong>
-            <span>{metric.label}</span>
-          </div>
-        ))}
-      </div>
-
-      <div className="report-secondary-metrics">
-        {secondary.map((metric) => (
-          <span key={metric.key}>
-            {metric.label} <strong>{metric.value}</strong>
+    <article
+      className="report-pick-card"
+      data-expanded={isSelected}
+      data-rank={recommendation.rank}
+    >
+      <button
+        aria-controls="top-region-detail-panel"
+        aria-expanded={isSelected}
+        className="report-pick-card-toggle"
+        onClick={onToggle}
+        type="button"
+      >
+        <span className="report-pick-card-top">
+          <RankMedal rank={recommendation.rank} />
+          <span className="report-region-name">
+            {recommendation.region.name}
+            <span>{recommendation.region.province}</span>
           </span>
-        ))}
-      </div>
+        </span>
 
-      <p className="report-tertiary-metrics">
-        {tertiary.map((metric) => `${metric.label} ${metric.value}`).join(" · ")}
-      </p>
+        <span className="report-ai-summary">
+          <strong>AI 추천 이유</strong>
+          <ul>
+            {reasons.map((reason) => (
+              <li key={reason}>{reason}</li>
+            ))}
+          </ul>
+        </span>
 
-      <footer className="report-pick-card-foot">
-        <span>{recommendation.eligibility?.label ?? recommendation.availability?.label ?? ""}</span>
-      </footer>
-
+        <span className="report-pick-card-action">
+          {isSelected ? "상세 근거 접기" : "상세 근거 보기"}
+        </span>
+      </button>
     </article>
   );
 }
 
+function RegionDetailPanel({ isOpen, observationWindow, presentation, recommendation }) {
+  const referenceMetrics = recommendation
+    ? metricItems(recommendation.metrics, presentation.contextMetrics)
+    : [];
+
+  return (
+    <div
+      className="report-detail-collapse"
+      data-open={isOpen}
+      data-rank={recommendation?.rank}
+      id="top-region-detail-panel"
+    >
+      <div className="report-detail-collapse-inner">
+        {recommendation && (
+          <section
+            aria-label={`${recommendation.region.name} 상세 근거`}
+            className="report-region-detail"
+          >
+            <header className="report-region-detail-header">
+              <div>
+                <span>{recommendation.rank}위 추천 산지</span>
+                <h3>{withSubjectParticle(recommendation.region.name)} 좋은 이유</h3>
+                {recommendation.reasons?.[0] && <p>{recommendation.reasons[0]}</p>}
+              </div>
+              <div className="report-detail-meta">
+                {referenceMetrics.length > 0 && (
+                  <dl className="report-detail-context" aria-label="관측 참고 정보">
+                    {referenceMetrics.map((metric) => (
+                      <div key={metric.key}>
+                        <dt>{metric.label}</dt>
+                        <dd>{metric.value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                )}
+                <p>
+                  {observationWindow.start} ~ {observationWindow.end}
+                </p>
+              </div>
+            </header>
+
+            <div
+              className="report-detail-groups"
+              style={{ "--detail-column-count": presentation.detailSections.length }}
+            >
+              {presentation.detailSections.map((section) => {
+                const steps = detailStorySteps(section, recommendation.metrics);
+                const supportingMetrics = supportingMetricItems(section, recommendation.metrics);
+                return (
+                  <article className="report-detail-group" key={section.id}>
+                    <header>
+                      <img alt="" aria-hidden="true" src={DETAIL_ICONS[section.icon]} />
+                      <div>
+                        <h4>{section.label}</h4>
+                        <p>{detailSectionInterpretation(section.interpretation, recommendation.metrics)}</p>
+                      </div>
+                    </header>
+                    <dl className="report-detail-flow">
+                      {steps.map((step) => (
+                        <div key={step.key}>
+                          <span>{step.eyebrow}</span>
+                          <dt>{step.label}</dt>
+                          <dd>{step.value}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                    {supportingMetrics.length > 0 && (
+                      <dl className="report-detail-support">
+                        {supportingMetrics.map((metric) => (
+                          <div key={metric.key}>
+                            <dt>{metric.label}</dt>
+                            <dd>{metric.value}</dd>
+                          </div>
+                        ))}
+                      </dl>
+                    )}
+                    <aside className="report-detail-explanation">
+                      <strong>왜 좋은가요?</strong>
+                      <p>{detailSectionExplanation(section.explanation, recommendation.metrics)}</p>
+                    </aside>
+                  </article>
+                );
+              })}
+            </div>
+
+          </section>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function RawResults({ errorMessage, fruit, onBack, onReload, result, status }) {
+  const [selectedRegion, setSelectedRegion] = useState(null);
+
   if (!result) {
     return (
       <main className="raw-results-page">
@@ -228,8 +354,9 @@ export default function RawResults({ errorMessage, fruit, onBack, onReload, resu
     );
   }
 
+  const presentation = getResultPresentation(result.fruit.id);
   const categories = scoreCategories(result);
-  const chartKeyMap = CHART_SCORE_KEY_BY_FRUIT[result.fruit.id] ?? {};
+  const chartKeyMap = presentation.chartScoreKeys;
   const barCharts = result.dashboard.charts.filter((chart) => chart.type !== "stacked-bar");
   const totalScoreChart = {
     color: "var(--gold-text)",
@@ -243,23 +370,51 @@ export default function RawResults({ errorMessage, fruit, onBack, onReload, resu
   const scopeLabel =
     result.candidateScope?.label ??
     `${result.fruit.name} 주산지 ${result.candidates?.length ?? result.recommendations.length}곳 중`;
+  const selectedRecommendation =
+    selectedRegion?.fruitId === result.fruit.id
+      ? result.recommendations.find((item) => item.region.id === selectedRegion.regionId)
+      : null;
 
   return (
     <main className="report-page">
+      <FruitBackdrop variant="report" />
       <div className="report-shell">
         <header className="report-nav">
-          <button onClick={onBack} type="button">
-            ← 과일 다시 선택
+          <button className="report-back-button" onClick={onBack} type="button">
+            <span aria-hidden="true" className="report-back-button-icon">
+              ←
+            </span>
+            과일 다시 선택
           </button>
         </header>
 
-        <section className="report-intro">
-          <p className="report-eyebrow mono">{result.rules.label}</p>
-          <h1>{result.fruit.name}</h1>
-          <p className="report-meta">
-            {scopeLabel} · 기준일 {result.referenceDate} · 관측 기간 {result.observationWindow.start} ~{" "}
-            {result.observationWindow.end}
-          </p>
+        <section className="report-intro" data-fruit={result.fruit.id}>
+          <div className="report-intro-content">
+            <h1>지금 {result.fruit.name}, 어디가 좋을까?</h1>
+            <p className="report-fruit-description">{presentation.hero.description}</p>
+            <dl className="report-meta-list" aria-label="분석 정보">
+              <div className="report-meta-item">
+                <dt>비교 산지</dt>
+                <dd>{scopeLabel}</dd>
+              </div>
+              <div className="report-meta-item">
+                <dt>기준일</dt>
+                <dd className="mono">{result.referenceDate}</dd>
+              </div>
+              <div className="report-meta-item">
+                <dt>관측 기간</dt>
+                <dd className="mono">
+                  {result.observationWindow.start} ~ {result.observationWindow.end}
+                </dd>
+              </div>
+            </dl>
+          </div>
+          <img
+            alt=""
+            aria-hidden="true"
+            className="report-intro-art"
+            src={HERO_ASSETS[presentation.hero.asset]}
+          />
         </section>
 
         <section className="report-section" aria-labelledby="top-regions-title">
@@ -267,13 +422,26 @@ export default function RawResults({ errorMessage, fruit, onBack, onReload, resu
           <div className="report-pick-grid">
             {result.recommendations.map((recommendation) => (
               <RegionCard
-                categories={categories}
-                fruitId={result.fruit.id}
+                isSelected={selectedRecommendation?.region.id === recommendation.region.id}
                 key={recommendation.region.id}
+                onToggle={() =>
+                  setSelectedRegion((current) =>
+                    current?.fruitId === result.fruit.id && current.regionId === recommendation.region.id
+                      ? null
+                      : { fruitId: result.fruit.id, regionId: recommendation.region.id },
+                  )
+                }
+                presentation={presentation}
                 recommendation={recommendation}
               />
             ))}
           </div>
+          <RegionDetailPanel
+            isOpen={Boolean(selectedRecommendation)}
+            observationWindow={result.observationWindow}
+            presentation={presentation}
+            recommendation={selectedRecommendation}
+          />
         </section>
 
         <section className="report-section" aria-labelledby="scoring-title">
