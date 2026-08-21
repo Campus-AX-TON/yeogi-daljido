@@ -627,28 +627,6 @@ button {
   letter-spacing: -0.035em;
 }
 
-.report-intro-tags {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  margin-top: 14px;
-}
-
-.report-intro-tags > span {
-  padding: 4px 12px;
-  border-radius: 999px;
-  color: var(--gold-text);
-  background: var(--gold-dim);
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.report-intro-tags p {
-  color: var(--text-on-ink-dim);
-  font-size: 13px;
-}
-
 .report-meta {
   max-width: 720px;
   margin: 12px auto 0;

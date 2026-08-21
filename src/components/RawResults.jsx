@@ -195,7 +195,6 @@ function RegionCard({ categories, fruitId, recommendation }) {
       </p>
 
       <footer className="report-pick-card-foot">
-        <span>신뢰도 {recommendation.confidence}</span>
         <span>{recommendation.eligibility?.label ?? recommendation.availability?.label ?? ""}</span>
       </footer>
 
@@ -252,20 +251,11 @@ export default function RawResults({ errorMessage, fruit, onBack, onReload, resu
           <button onClick={onBack} type="button">
             ← 과일 다시 선택
           </button>
-          <button onClick={onReload} type="button">
-            데이터 다시 조회
-          </button>
         </header>
 
         <section className="report-intro">
           <p className="report-eyebrow mono">{result.rules.label}</p>
-          <h1>
-            {result.fruit.name} <span aria-hidden="true">·</span> {result.fruit.cultivar.name}
-          </h1>
-          <div className="report-intro-tags">
-            <span>{result.fruit.cultivar.status}</span>
-            <p>제철 {result.fruit.cultivar.season}</p>
-          </div>
+          <h1>{result.fruit.name}</h1>
           <p className="report-meta">
             {scopeLabel} · 기준일 {result.referenceDate} · 관측 기간 {result.observationWindow.start} ~{" "}
             {result.observationWindow.end}
@@ -313,6 +303,11 @@ export default function RawResults({ errorMessage, fruit, onBack, onReload, resu
           )}
         </section>
 
+        <section className="report-section" aria-labelledby="map-title">
+          <h2 id="map-title">지도로 보기</h2>
+          <ResultRegionMap recommendations={result.recommendations} />
+        </section>
+
         <section className="report-section" aria-labelledby="charts-title">
           <h2 id="charts-title">데이터로 보기</h2>
           <div className="report-chart-grid">
@@ -331,11 +326,6 @@ export default function RawResults({ errorMessage, fruit, onBack, onReload, resu
               );
             })}
           </div>
-        </section>
-
-        <section className="report-section" aria-labelledby="map-title">
-          <h2 id="map-title">지도로 보기</h2>
-          <ResultRegionMap recommendations={result.recommendations} />
         </section>
 
         {result.dataUsage?.limitations?.length > 0 && (
