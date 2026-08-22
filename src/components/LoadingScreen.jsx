@@ -1,20 +1,10 @@
-import { useEffect, useState } from "react";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import loadingAnimation from "../assets/thanksgiving-basket.lottie?url";
+import usePrefersReducedMotion from "../hooks/usePrefersReducedMotion.js";
 import FruitBackdrop from "./FruitBackdrop.jsx";
 
 export default function LoadingScreen({ fruit }) {
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const updatePreference = () => setPrefersReducedMotion(mediaQuery.matches);
-
-    updatePreference();
-    mediaQuery.addEventListener("change", updatePreference);
-
-    return () => mediaQuery.removeEventListener("change", updatePreference);
-  }, []);
+  const prefersReducedMotion = usePrefersReducedMotion();
 
   return (
     <>
