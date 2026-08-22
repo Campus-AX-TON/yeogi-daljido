@@ -9,6 +9,11 @@ import rankMedalBronze from "../assets/rank-medal-bronze.png";
 import rankMedalGold from "../assets/rank-medal-gold.png";
 import rankMedalSilver from "../assets/rank-medal-silver.png";
 import { getResultPresentation } from "../data/resultPresentation.js";
+import {
+  FRUIT_PURCHASE_VERIFICATION,
+  getOriginPurchasePlacesForRegion,
+} from "../data/fruitSellers.js";
+import { getFarmDirectoryForRegion } from "../data/farmDirectory.js";
 import FruitBackdrop from "./FruitBackdrop.jsx";
 import ResultBarChart from "./ResultBarChart.jsx";
 import ResultRegionMap from "./ResultRegionMap.jsx";
@@ -31,6 +36,12 @@ const HERO_ASSETS = {
   apple: heroApple,
   grape: heroGrape,
   pear: heroPear,
+};
+
+const FRUIT_NAMES = {
+  apple: "사과",
+  grape: "포도",
+  pear: "배",
 };
 
 function displayValue(value, unit = "") {
@@ -190,7 +201,7 @@ function RankMedal({ rank }) {
   );
 }
 
-function RegionCard({ isSelected, onToggle, presentation, recommendation }) {
+function RegionCard({ isExpanded, isSelected, onToggle, presentation, recommendation }) {
   const reasons = presentation.aiReasonsByRank[recommendation.rank];
   if (!reasons) {
     throw new Error(`${recommendation.rank}위 AI 추천 이유 설정이 없습니다.`);
@@ -199,12 +210,14 @@ function RegionCard({ isSelected, onToggle, presentation, recommendation }) {
   return (
     <article
       className="report-pick-card"
-      data-expanded={isSelected}
+      data-expanded={isExpanded}
       data-rank={recommendation.rank}
+      data-selected={isSelected}
     >
       <button
-        aria-controls="top-region-detail-panel"
-        aria-expanded={isSelected}
+        aria-controls="top-region-detail-panel fruit-sellers"
+        aria-expanded={isExpanded}
+        aria-pressed={isSelected}
         className="report-pick-card-toggle"
         onClick={onToggle}
         type="button"
@@ -227,7 +240,11 @@ function RegionCard({ isSelected, onToggle, presentation, recommendation }) {
         </span>
 
         <span className="report-pick-card-action">
-          {isSelected ? "상세 근거 접기" : "상세 근거 보기"}
+          {isExpanded
+            ? "상세 근거 접기"
+            : isSelected
+              ? "선택됨 · 상세 근거 보기"
+              : "구매처와 상세 근거 보기"}
         </span>
       </button>
     </article>
@@ -326,8 +343,150 @@ function RegionDetailPanel({ isOpen, observationWindow, presentation, recommenda
   );
 }
 
+function FruitSellerSection({ fruitId, recommendations }) {
+  if (!recommendations?.length) return null;
+
+  return (
+    <section className="report-section" aria-labelledby="fruit-sellers-title" id="fruit-sellers">
+      <header className="report-star-farm-heading">
+        <div>
+          <p className="report-star-farm-kicker">Top 3 산지별 구매처</p>
+          <h2 id="fruit-sellers-title">추천 산지의 {FRUIT_NAMES[fruitId]} 구매처</h2>
+          <p>현재 확인된 생과 판매 페이지를 먼저 보여주고, 추가 농가 연락처는 보조 정보로 구분해요.</p>
+        </div>
+        <span>확인 {FRUIT_PURCHASE_VERIFICATION.verifiedAt.replaceAll("-", ".")}</span>
+      </header>
+
+      <div className="report-origin-directory">
+        {recommendations.map((recommendation) => {
+          const purchaseOptions = getOriginPurchasePlacesForRegion(
+            fruitId,
+            recommendation.region.name,
+          );
+          const farmContacts = getFarmDirectoryForRegion(fruitId, recommendation.region.name);
+          const placeCount = purchaseOptions.length;
+
+          return (
+            <article className="report-origin-directory-group" key={recommendation.region.id}>
+              <header>
+                <div className="report-origin-directory-title">
+                  <RankMedal rank={recommendation.rank} />
+                  <div>
+                    <span>{recommendation.region.province} · {recommendation.rank}위 추천 산지</span>
+                    <h3>{recommendation.region.name} {FRUIT_NAMES[fruitId]} 구매처</h3>
+                  </div>
+                </div>
+                <small>온라인 {placeCount}곳 · 추가 문의 {farmContacts.length}곳</small>
+              </header>
+
+              {placeCount > 0 ? (
+                <div className="report-purchase-list">
+                  {purchaseOptions.map((option) => (
+                    <article className="report-purchase-card" key={option.listing.url}>
+                      <div className="report-purchase-card-main">
+                        <div className="report-purchase-card-heading">
+                          <div>
+                            <p>{option.marketplace.name}</p>
+                            <h4>{option.listing.productName}</h4>
+                          </div>
+                          <span>{option.listing.kind === "product" ? "생과 상품" : "지역 상품 모음"}</span>
+                        </div>
+                        <p className="report-purchase-description">{option.marketplace.description}</p>
+
+                        {option.producer && (
+                          <div className="report-linked-producer">
+                            <div>
+                              <span>{option.producer.entityLabel}</span>
+                              <strong>{option.producer.name}</strong>
+                            </div>
+                            <p>{option.producer.description}</p>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="report-purchase-actions">
+                        {option.producer?.profileUrl && (
+                          <a href={option.producer.profileUrl} rel="noreferrer" target="_blank">
+                            농가 정보
+                          </a>
+                        )}
+                        {option.producer?.phone && (
+                          <details>
+                            <summary>연락처</summary>
+                            <div>
+                              <p>현재 출고 가능 여부를 먼저 문의해 주세요.</p>
+                              <a href={`tel:${option.producer.phone.replace(/[^\d+]/g, "")}`}>
+                                {option.producer.phone}
+                              </a>
+                            </div>
+                          </details>
+                        )}
+                        <a className="report-purchase-primary" href={option.listing.url} rel="noreferrer" target="_blank">
+                          {option.listing.kind === "product" ? "상품 보기" : "판매처 보기"}
+                          <span aria-hidden="true">→</span>
+                        </a>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <div className="report-star-farm-empty">
+                  {recommendation.region.name}에서 현재 구매 가능한 {FRUIT_NAMES[fruitId]} 생과 페이지를 확인하지 못했어요.
+                </div>
+              )}
+
+              {farmContacts.length > 0 && (
+                <details className="report-additional-farms">
+                  <summary>추가로 문의할 수 있는 농가 {farmContacts.length}곳</summary>
+                  <div className="report-farm-contact-list">
+                    {farmContacts.map((contact) => (
+                      <article
+                        className="report-farm-contact-card"
+                        data-status={contact.contactStatus}
+                        key={`${contact.name}-${contact.phone}`}
+                      >
+                        <div className="report-farm-contact-card-heading">
+                          <div>
+                            <p>{contact.entityLabel}</p>
+                            <h4>{contact.name}</h4>
+                          </div>
+                          <span>판매 여부 문의 필요</span>
+                        </div>
+                        <p className="report-farm-contact-description">{contact.description}</p>
+                        <div className="report-farm-contact-actions">
+                          <a href={contact.sourceUrl} rel="noreferrer" target="_blank">
+                            정보 출처 보기
+                          </a>
+                          <details>
+                            <summary>전화번호 보기</summary>
+                            <div>
+                              <p>생과 직거래가 가능한지 먼저 확인해 주세요.</p>
+                              <a href={`tel:${contact.phone.replace(/[^\d+]/g, "")}`}>
+                                {contact.phone}
+                              </a>
+                            </div>
+                          </details>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                </details>
+              )}
+            </article>
+          );
+        })}
+      </div>
+
+      <p className="report-star-farm-notice">
+        기상 분석 순위는 판매처 수와 관계없이 계산돼요. 품절·가공품·체험 상품은 구매처에서 제외했으며, 공개 농가 연락처는 현재 전화 주문 가능성을 보장하지 않아요.
+      </p>
+    </section>
+  );
+}
+
 export default function RawResults({ errorMessage, fruit, onBack, onReload, result, status }) {
   const [selectedRegion, setSelectedRegion] = useState(null);
+  const [expandedRegion, setExpandedRegion] = useState(null);
 
   if (!result) {
     return (
@@ -373,6 +532,11 @@ export default function RawResults({ errorMessage, fruit, onBack, onReload, resu
   const selectedRecommendation =
     selectedRegion?.fruitId === result.fruit.id
       ? result.recommendations.find((item) => item.region.id === selectedRegion.regionId)
+      : null;
+  const activeRecommendation = selectedRecommendation ?? result.recommendations[0] ?? null;
+  const expandedRecommendation =
+    expandedRegion?.fruitId === result.fruit.id
+      ? result.recommendations.find((item) => item.region.id === expandedRegion.regionId)
       : null;
 
   return (
@@ -422,27 +586,35 @@ export default function RawResults({ errorMessage, fruit, onBack, onReload, resu
           <div className="report-pick-grid">
             {result.recommendations.map((recommendation) => (
               <RegionCard
-                isSelected={selectedRecommendation?.region.id === recommendation.region.id}
+                isExpanded={expandedRecommendation?.region.id === recommendation.region.id}
+                isSelected={activeRecommendation?.region.id === recommendation.region.id}
                 key={recommendation.region.id}
-                onToggle={() =>
-                  setSelectedRegion((current) =>
+                onToggle={() => {
+                  const nextRegion = { fruitId: result.fruit.id, regionId: recommendation.region.id };
+                  setSelectedRegion(nextRegion);
+                  setExpandedRegion((current) =>
                     current?.fruitId === result.fruit.id && current.regionId === recommendation.region.id
                       ? null
-                      : { fruitId: result.fruit.id, regionId: recommendation.region.id },
-                  )
-                }
+                      : nextRegion,
+                  );
+                }}
                 presentation={presentation}
                 recommendation={recommendation}
               />
             ))}
           </div>
           <RegionDetailPanel
-            isOpen={Boolean(selectedRecommendation)}
+            isOpen={Boolean(expandedRecommendation)}
             observationWindow={result.observationWindow}
             presentation={presentation}
-            recommendation={selectedRecommendation}
+            recommendation={expandedRecommendation}
           />
         </section>
+
+        <FruitSellerSection
+          fruitId={result.fruit.id}
+          recommendations={result.recommendations}
+        />
 
         <section className="report-section" aria-labelledby="scoring-title">
           <h2 id="scoring-title">평가 기준</h2>
